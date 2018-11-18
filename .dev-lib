@@ -1,1 +1,3 @@
+DEFAULT_BASE_BRANCH=develop
 PHPCS_IGNORE='vendor/*,wp-includes/rest-api/auth/jwt/*,tests/wp-tests/*'
+CHECK_SCOPE=patches
