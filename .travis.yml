@@ -20,7 +20,6 @@ cache:
     - $HOME/phpunit-bin
 
 php:
-  - 5.3
   - 7.2
 
 env:
