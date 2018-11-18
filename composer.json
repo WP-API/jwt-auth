@@ -12,6 +12,7 @@
     "dealerdirect/phpcodesniffer-composer-installer": "^0.4.4",
     "firebase/php-jwt": "^5.0",
     "phpcompatibility/phpcompatibility-wp": "*",
+	"php-coveralls/php-coveralls": "^2.1",
     "slowprog/composer-copy-file": "0.2.1",
     "wp-coding-standards/wpcs": "*",
     "xwp/wp-dev-lib": "dev-feature/composer-first"
