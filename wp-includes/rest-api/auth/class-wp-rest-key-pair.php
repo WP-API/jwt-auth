@@ -434,7 +434,6 @@ class WP_REST_Key_Pair {
 	 * @return object|\WP_Error The key-pair or error.
 	 */
 	public function generate_key_pair( WP_REST_Request $request ) {
-
 		$name    = $request->get_param( 'name' );
 		$user_id = $request->get_param( 'user_id' );
 		$user    = get_user_by( 'id', $user_id );
