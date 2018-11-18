@@ -1,0 +1,53 @@
+{
+  "name": "jwt-auth",
+  "type": "wordpress-plugin",
+  "description": "@todo",
+  "homepage": "https://github.com/WP-API/jwt-auth",
+  "license": "GPLv2",
+  "prefer-stable" : true,
+  "require": {
+    "php": ">=5.3"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.4.4",
+    "firebase/php-jwt": "^5.0",
+    "phpcompatibility/phpcompatibility-wp": "*",
+    "slowprog/composer-copy-file": "0.2.1",
+    "wp-coding-standards/wpcs": "*",
+    "xwp/wp-dev-lib": "dev-feature/composer-first"
+  },
+  "scripts": {
+    "phpcs": [
+      "./vendor/bin/phpcs . --standard=.phpcs.ruleset.xml"
+    ],
+    "phpunit": [
+      "./bin/phpunit.sh xdebug_off $1"
+    ],
+    "phpunit-coverage": [
+      "./bin/phpunit.sh xdebug_on $1"
+    ],
+    "post-autoload-dump": [
+      "[ -f .git/hooks/pre-commit ] || ./vendor/xwp/wp-dev-lib/scripts/install-pre-commit-hook.sh"
+    ],
+    "post-install-cmd": [
+      "@install-tests",
+      "SlowProg\\CopyFile\\ScriptHandler::copy"
+    ],
+    "post-update-cmd": [
+      "@install-tests",
+      "SlowProg\\CopyFile\\ScriptHandler::copy"
+    ],
+    "readme": [
+      "./vendor/xwp/wp-dev-lib/scripts/generate-markdown-readme"
+    ],
+    "install-tests": [
+      "./bin/install-tests.sh 4.9.8 ./tests/wp-tests"
+    ]
+  },
+  "extra": {
+    "copy-file": {
+      "tests/autoload.php": "tests/wp-tests/phpunit/wp-tests-config.php",
+      "vendor/firebase/php-jwt/src/": "wp-includes/rest-api/auth/jwt/"
+    }
+  }
+}

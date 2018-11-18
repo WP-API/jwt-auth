@@ -1,0 +1,1 @@
+PHPCS_IGNORE='vendor/*,wp-includes/rest-api/auth/jwt/*,tests/wp-tests/*'
