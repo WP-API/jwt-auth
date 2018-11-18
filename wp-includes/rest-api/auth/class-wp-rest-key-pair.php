@@ -82,7 +82,6 @@ class WP_REST_Key_Pair {
 	 * @see register_rest_route()
 	 */
 	public function register_routes() {
-
 		$args = array(
 			array(
 				'methods'  => WP_REST_Server::CREATABLE,
@@ -170,7 +169,6 @@ class WP_REST_Key_Pair {
 	 * @return array Item schema data.
 	 */
 	public function get_item_schema() {
-
 		$schema = array(
 			'$schema'    => 'http://json-schema.org/draft-04/schema#',
 			'title'      => esc_html__( 'Key-pair', 'jwt-auth' ),

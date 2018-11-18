@@ -88,7 +88,6 @@ class WP_REST_Token {
 	 * @see register_rest_route()
 	 */
 	public function register_routes() {
-
 		$args = array(
 			array(
 				'methods'  => WP_REST_Server::CREATABLE,
@@ -139,7 +138,6 @@ class WP_REST_Token {
 	 * @return array Item schema data.
 	 */
 	public function get_item_schema() {
-
 		$schema = array(
 			'$schema'    => 'http://json-schema.org/draft-04/schema#',
 			'title'      => __( 'JSON Web Token', 'jwt-auth' ),
@@ -246,7 +244,6 @@ class WP_REST_Token {
 	 * @return bool
 	 */
 	public function require_token() {
-
 		$require_token  = true;
 		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : false; // WPCS: sanitization okay.
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : false; // WPCS: sanitization okay.
