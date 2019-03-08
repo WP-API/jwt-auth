@@ -152,6 +152,85 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test after_password_reset().
+	 *
+	 * @covers ::after_password_reset()
+	 * @since 0.1
+	 */
+	public function test_after_password_reset() {
+		$user_data = array(
+			'role'       => 'editor',
+			'user_login' => 'testeditor',
+			'user_pass'  => 'testpassword',
+		);
+
+		$user_id = $this->factory->user->create( $user_data );
+
+		$this->assertEquals( array(), $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$keypairs = array(
+			array(
+				'api_key'    => 12345,
+				'api_secret' => 54321,
+			),
+		);
+		update_user_meta( $user_id, WP_REST_Key_Pair::_USERMETA_KEY_, $keypairs );
+		$this->assertEquals( $keypairs, $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$this->key_pair->after_password_reset( get_user_by( 'ID', $user_id ) );
+		$this->assertEquals( $keypairs, $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		reset_password( get_user_by( 'ID', $user_id ), 'testpassword1' );
+		$this->assertEquals( array(), $this->key_pair->get_user_key_pairs( $user_id ) );
+	}
+
+	/**
+	 * Test profile_update().
+	 *
+	 * @covers ::profile_update()
+	 * @since 0.1
+	 */
+	public function test_profile_update() {
+		global $wp_current_filter;
+
+		$tmp = $wp_current_filter;
+
+		$user_data = array(
+			'role'       => 'editor',
+			'user_login' => 'testeditor',
+			'user_pass'  => 'testpassword',
+		);
+
+		$user_id = $this->factory->user->create( $user_data );
+
+		$this->assertEquals( array(), $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$keypairs = array(
+			array(
+				'api_key'    => 12345,
+				'api_secret' => 54321,
+			),
+		);
+		update_user_meta( $user_id, WP_REST_Key_Pair::_USERMETA_KEY_, $keypairs );
+		$this->assertEquals( $keypairs, $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$this->key_pair->profile_update( $user_id );
+		$this->assertEquals( $keypairs, $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$wp_current_filter = array(
+			'profile_update',
+		);
+		$this->key_pair->profile_update( $user_id );
+		$this->assertEquals( $keypairs, $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$_POST['pass1'] = 'changed';
+		$this->key_pair->profile_update( $user_id );
+		$this->assertEquals( array(), $this->key_pair->get_user_key_pairs( $user_id ) );
+
+		$wp_current_filter = $tmp;
+	}
+
+	/**
 	 * Test require_token().
 	 *
 	 * @covers ::require_token()

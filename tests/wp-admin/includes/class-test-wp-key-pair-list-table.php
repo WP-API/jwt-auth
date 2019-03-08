@@ -16,11 +16,18 @@
 class Test_WP_Key_Pair_List_Table extends WP_UnitTestCase {
 
 	/**
+	 * List Table.
+	 *
 	 * @var WP_Key_Pair_List_Table
 	 */
 	protected $table;
 
-	function setUp() {
+	/**
+	 * Setup.
+	 *
+	 * @inheritdoc
+	 */
+	public function setUp() {
 		parent::setUp();
 		$this->table = new WP_Key_Pair_List_Table( array( 'screen' => 'profile' ) );
 	}

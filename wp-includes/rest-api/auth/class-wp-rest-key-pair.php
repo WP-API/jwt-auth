@@ -56,6 +56,8 @@ class WP_REST_Key_Pair {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ), 99 );
 		add_action( 'show_user_profile', array( $this, 'show_user_profile' ) );
 		add_action( 'edit_user_profile', array( $this, 'show_user_profile' ) );
+		add_action( 'after_password_reset', array( $this, 'after_password_reset' ) );
+		add_action( 'profile_update', array( $this, 'profile_update' ) );
 
 		add_filter( 'rest_authentication_require_token', array( $this, 'require_token' ), 10, 3 );
 		add_filter( 'rest_authentication_user', array( $this, 'authenticate' ), 10, 2 );
@@ -256,6 +258,40 @@ class WP_REST_Key_Pair {
 		$this->template_new_key_pair();
 		$this->template_new_token_key_pair();
 		$this->template_key_pair_row();
+	}
+
+	/**
+	 * Fires after the user's password is reset.
+	 *
+	 * @param WP_User $user The user.
+	 */
+	public function after_password_reset( WP_User $user ) {
+		if ( 'after_password_reset' !== current_filter() ) {
+			return;
+		}
+
+		$keypairs = $this->get_user_key_pairs( $user->ID );
+		if ( ! empty( $keypairs ) ) {
+			$this->set_user_key_pairs( $user->ID, array() );
+		}
+	}
+
+	/**
+	 * Fires after the user's password is reset.
+	 *
+	 * @param int $user_id The user ID.
+	 */
+	public function profile_update( $user_id ) {
+		if ( 'profile_update' !== current_filter() ) {
+			return;
+		}
+
+		if ( isset( $_POST['pass1'] ) && ! empty( $_POST['pass1'] ) ) { // phpcs:ignore
+			$keypairs = $this->get_user_key_pairs( $user_id );
+			if ( ! empty( $keypairs ) ) {
+				$this->set_user_key_pairs( $user_id, array() );
+			}
+		}
 	}
 
 	/**
