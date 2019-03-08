@@ -68,7 +68,7 @@ if ( ! isset( $_plugin_file ) ) {
 unset( $_plugin_dir, $_plugin_file_candidate, $_plugin_file_src );
 
 /**
- * Force plugins defined in a constant (supplied by phpunit.xml) to be active at runtime.
+ * Force plugins defined in a constant (supplied by phpunit.xml.dist) to be active at runtime.
  *
  * @filter site_option_active_sitewide_plugins
  * @filter option_active_plugins
@@ -76,11 +76,9 @@ unset( $_plugin_dir, $_plugin_file_candidate, $_plugin_file_src );
  * @param array $active_plugins All active plugins.
  * @return array
  */
-function xwp_filter_active_plugins_for_phpunit( $active_plugins ) {
+function _phpunit_filter_active_plugins( $active_plugins ) {
 	$forced_active_plugins = array();
-	if ( file_exists( WP_CONTENT_DIR . '/themes/vip/plugins/vip-init.php' ) && defined( 'WP_TEST_VIP_QUICKSTART_ACTIVATED_PLUGINS' ) ) {
-		$forced_active_plugins = preg_split( '/\s*,\s*/', WP_TEST_VIP_QUICKSTART_ACTIVATED_PLUGINS );
-	} elseif ( defined( 'WP_TEST_ACTIVATED_PLUGINS' ) ) {
+	if ( defined( 'WP_TEST_ACTIVATED_PLUGINS' ) ) {
 		$forced_active_plugins = preg_split( '/\s*,\s*/', WP_TEST_ACTIVATED_PLUGINS );
 	}
 	if ( ! empty( $forced_active_plugins ) ) {
@@ -90,24 +88,19 @@ function xwp_filter_active_plugins_for_phpunit( $active_plugins ) {
 	}
 	return $active_plugins;
 }
-tests_add_filter( 'site_option_active_sitewide_plugins', 'xwp_filter_active_plugins_for_phpunit' );
-tests_add_filter( 'option_active_plugins', 'xwp_filter_active_plugins_for_phpunit' );
+tests_add_filter( 'site_option_active_sitewide_plugins', '_phpunit_filter_active_plugins' );
+tests_add_filter( 'option_active_plugins', '_phpunit_filter_active_plugins' );
 
 /**
- * Load the plugins.
+ * Load the plugin.
  */
-function xwp_unit_test_load_plugin_file() {
+function _phpunit_load_plugin_file() {
 	global $_plugin_file;
-
-	// Force vip-init.php to be loaded on VIP quickstart.
-	if ( file_exists( WP_CONTENT_DIR . '/themes/vip/plugins/vip-init.php' ) ) {
-		require_once WP_CONTENT_DIR . '/themes/vip/plugins/vip-init.php';
-	}
 
 	// Load this plugin.
 	require_once $_plugin_file;
 	unset( $_plugin_file );
 }
-tests_add_filter( 'muplugins_loaded', 'xwp_unit_test_load_plugin_file' );
+tests_add_filter( 'muplugins_loaded', '_phpunit_load_plugin_file' );
 
 require $_tests_dir . '/includes/bootstrap.php';

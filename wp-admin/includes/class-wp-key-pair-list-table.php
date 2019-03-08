@@ -85,16 +85,16 @@ class WP_Key_Pair_List_Table extends WP_List_Table {
 				}
 				return $item['last_ip'];
 			case 'token':
-				return get_submit_button( __( 'New Token', 'jwt-auth' ), 'secondary', 'token-key-pair-' . $item['api_key'], false );
+				return get_submit_button( esc_html__( 'New Token', 'jwt-auth' ), 'secondary', 'token-key-pair-' . $item['api_key'], false );
 			case 'revoke':
-				return get_submit_button( __( 'Revoke', 'jwt-auth' ), 'delete', 'revoke-key-pair-' . $item['api_key'], false );
+				return get_submit_button( esc_html__( 'Revoke', 'jwt-auth' ), 'delete', 'revoke-key-pair-' . $item['api_key'], false );
 			default:
 				return '';
 		}
 	}
 
 	/**
-	 * Generates custom table navigation to prevent conflicting nonces.
+	 * Replace table navigation with a revoke all key-pairs button.
 	 *
 	 * @since 0.1
 	 * @access protected
@@ -107,7 +107,7 @@ class WP_Key_Pair_List_Table extends WP_List_Table {
 
 			<?php if ( 'bottom' === $which ) : ?>
 				<div class="alignright">
-					<?php submit_button( __( 'Revoke All', 'jwt-auth' ), 'delete', 'revoke-all-key-pairs', false ); ?>
+					<?php submit_button( esc_html__( 'Revoke All', 'jwt-auth' ), 'delete', 'revoke-all-key-pairs', false ); ?>
 				</div>
 			<?php endif; ?>
 

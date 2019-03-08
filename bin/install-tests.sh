@@ -1,7 +1,7 @@
 #!/bin/bash
 
-WP_VERSION=$1
-WP_TESTS_DIR=$2
+WP_VERSION=`grep "wp_version =" ../../../wp-includes/version.php | awk '{print $3}' | sed "s/'//g" | sed "s/;//g"`
+WP_TESTS_DIR=tests/wp-tests
 
 function download {
 	if command -v curl >/dev/null 2>&1; then

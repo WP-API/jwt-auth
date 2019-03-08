@@ -1,7 +1,7 @@
 {
   "name": "jwt-auth",
   "type": "wordpress-plugin",
-  "description": "@todo",
+  "description": "Experimental JWT Authentication plugin.",
   "homepage": "https://github.com/WP-API/jwt-auth",
   "license": "GPLv2",
   "prefer-stable" : true,
@@ -9,46 +9,49 @@
     "php": ">=5.3"
   },
   "require-dev": {
-    "dealerdirect/phpcodesniffer-composer-installer": "^0.4.4",
+	"brainmaestro/composer-git-hooks": "^2.6.0",
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.5.0",
     "firebase/php-jwt": "^5.0",
     "phpcompatibility/phpcompatibility-wp": "*",
 	"php-coveralls/php-coveralls": "^2.1",
     "slowprog/composer-copy-file": "0.2.1",
     "wp-coding-standards/wpcs": "*",
-    "xwp/wp-dev-lib": "dev-feature/composer-first"
+    "xwp/wp-dev-lib": "^1.0.0"
   },
   "scripts": {
     "phpcs": [
-      "./vendor/bin/phpcs . --standard=.phpcs.ruleset.xml"
+      "./vendor/bin/phpcs ${1:.} --standard=.phpcs.ruleset.xml"
     ],
+	"phpcbf": [
+	  "./vendor/bin/phpcbf ${1:.} --standard=.phpcs.ruleset.xml"
+	],
     "phpunit": [
-      "./bin/phpunit.sh xdebug_off $1"
+      "./bin/phpunit.sh xdebug_off"
     ],
     "phpunit-coverage": [
-      "./bin/phpunit.sh xdebug_on $1"
+      "./bin/phpunit.sh xdebug_on"
     ],
-    "post-autoload-dump": [
-      "[ -f .git/hooks/pre-commit ] || ./vendor/xwp/wp-dev-lib/scripts/install-pre-commit-hook.sh"
-    ],
-    "post-install-cmd": [
-      "@install-tests",
-      "SlowProg\\CopyFile\\ScriptHandler::copy"
-    ],
-    "post-update-cmd": [
-      "@install-tests",
-      "SlowProg\\CopyFile\\ScriptHandler::copy"
-    ],
-    "readme": [
-      "./vendor/xwp/wp-dev-lib/scripts/generate-markdown-readme"
-    ],
-    "install-tests": [
-      "./bin/install-tests.sh 4.9.8 ./tests/wp-tests"
-    ]
+	"post-install-cmd": [
+	  "./bin/install-tests.sh",
+	  "./vendor/bin/cghooks add --no-lock",
+	  "SlowProg\\CopyFile\\ScriptHandler::copy"
+	],
+	"post-update-cmd": [
+	  "./bin/install-tests.sh",
+	  "./vendor/bin/cghooks update",
+	  "SlowProg\\CopyFile\\ScriptHandler::copy"
+	],
+	"readme": [
+	  "./vendor/xwp/wp-dev-lib/scripts/generate-markdown-readme"
+	]
   },
   "extra": {
     "copy-file": {
       "tests/autoload.php": "tests/wp-tests/phpunit/wp-tests-config.php",
       "vendor/firebase/php-jwt/src/": "wp-includes/rest-api/auth/jwt/"
-    }
+    },
+	"hooks": {
+	  "pre-commit": "./vendor/xwp/wp-dev-lib/scripts/pre-commit"
+	}
   }
 }
