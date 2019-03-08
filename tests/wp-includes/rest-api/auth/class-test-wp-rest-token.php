@@ -114,6 +114,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			'role'       => 'administrator',
 			'user_login' => 'testuser',
 			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
 		);
 
 		$user_id = $this->factory->user->create( $user_data );
@@ -123,13 +124,17 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 				array(
 					'data' => array(
 						'user' => array(
-							'id'   => $user_id,
-							'type' => 'wp_user',
+							'id'         => $user_id,
+							'type'       => 'wp_user',
+							'user_login' => 'testuser',
+							'user_email' => 'testuser@sample.org',
 						),
 					),
 				)
 			)
 		);
+
+		add_filter( 'rest_authentication_is_api_request', '__return_true' );
 
 		// Another authentication method was used.
 		$this->assertEquals( 'alt_auth', $this->token->authenticate( 'alt_auth' ) );
@@ -186,6 +191,10 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$authenticate = $mock->authenticate( null );
 		$this->assertTrue( $authenticate );
 		$this->assertEquals( $user_id, get_current_user_id() );
+		remove_filter( 'rest_authentication_is_api_request', '__return_true' );
+
+		$authenticate = $mock->authenticate( null );
+		$this->assertNull( $authenticate );
 	}
 
 	/**
@@ -202,6 +211,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			'role'       => 'administrator',
 			'user_login' => 'testuser',
 			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
 		);
 
 		// @codingStandardsIgnoreStart
@@ -315,8 +325,8 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$user_data = array(
 			'role'       => 'administrator',
 			'user_login' => 'testuser',
-			'user_email' => 'testuser@sample.org',
 			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
 		);
 
 		$request = new WP_REST_Request( 'POST', 'wp/v2/token' );
@@ -379,6 +389,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			'role'       => 'administrator',
 			'user_login' => 'testuser',
 			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
 		);
 
 		$user_id = $this->factory->user->create( $user_data );
@@ -390,8 +401,10 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 					'exp'  => time() - 1,
 					'data' => array(
 						'user' => array(
-							'id'   => 10,
-							'type' => 'wp_user',
+							'id'         => 10,
+							'type'       => 'wp_user',
+							'user_login' => 'testuser',
+							'user_email' => 'testuser@sample.org',
 						),
 					),
 				)
@@ -521,6 +534,43 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$this->assertTrue( is_wp_error( $validate_token ) );
 		$this->assertEquals( $validate_token->get_error_code(), 'rest_authentication_token_error' );
 
+		// Invalid token, user email has changed.
+		wp_update_user(
+			array(
+				'ID'         => $user_id,
+				'user_email' => 'testuser1@sample.org',
+			)
+		);
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'jwt',
+				)
+			)
+			->getMock();
+		$mock->method( 'jwt' )->willReturn( $jwt );
+
+		$validate_token = $mock->validate_token();
+		$this->assertTrue( is_wp_error( $validate_token ) );
+		$this->assertEquals( $validate_token->get_error_code(), 'rest_authentication_invalid_token_user_email' );
+
+		// Invalid token, user login has changed. You cannot change your login, but better safe than sorry.
+		$jwt->data->user->user_login = 'testuser1';
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'jwt',
+				)
+			)
+			->getMock();
+		$mock->method( 'jwt' )->willReturn( $jwt );
+
+		$validate_token = $mock->validate_token();
+		$this->assertTrue( is_wp_error( $validate_token ) );
+		$this->assertEquals( $validate_token->get_error_code(), 'rest_authentication_invalid_token_user_login' );
+
 		// @codingStandardsIgnoreStart
 		unset( $_SERVER['HTTP_AUTHORIZATION'] );
 		// @codingStandardsIgnoreEnd
@@ -590,6 +640,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			'role'       => 'administrator',
 			'user_login' => 'testuser',
 			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
 		);
 
 		$jwt = json_decode(
@@ -597,8 +648,10 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 				array(
 					'data' => array(
 						'user' => array(
-							'id'   => 10,
-							'type' => 'wp_user',
+							'id'         => 10,
+							'type'       => 'wp_user',
+							'user_login' => 'testuser',
+							'user_email' => 'testuser@sample.org',
 						),
 					),
 				)
@@ -613,8 +666,26 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$this->assertTrue( is_wp_error( $user_valid ) );
 		$this->assertEquals( $user_valid->get_error_code(), 'rest_authentication_invalid_token_wp_user' );
 
-		$jwt->data->user->id = $this->factory->user->create( $user_data );
-		$user_valid          = $this->token->validate_user( $jwt );
+		// Create the user.
+		$jwt->data->user->id         = $this->factory->user->create( $user_data );
+		$jwt->data->user->user_login = 'testuser1';
+
+		$user_valid = $this->token->validate_user( $jwt );
+		$this->assertTrue( is_wp_error( $user_valid ) );
+		$this->assertEquals( $user_valid->get_error_code(), 'rest_authentication_invalid_token_user_login' );
+
+		// Change user values.
+		$jwt->data->user->user_login = 'testuser';
+		$jwt->data->user->user_email = 'testuser1@sample.org';
+
+		$user_valid = $this->token->validate_user( $jwt );
+		$this->assertTrue( is_wp_error( $user_valid ) );
+		$this->assertEquals( $user_valid->get_error_code(), 'rest_authentication_invalid_token_user_email' );
+
+		// Reset user email.
+		$jwt->data->user->user_email = 'testuser@sample.org';
+
+		$user_valid = $this->token->validate_user( $jwt );
 		$this->assertTrue( $user_valid );
 	}
 

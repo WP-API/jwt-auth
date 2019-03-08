@@ -211,6 +211,14 @@ class WP_REST_Token {
 	 */
 	public function authenticate( $result ) {
 
+		// Check for valid API requests.
+		$api_request = ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'REST_REQUEST' ) && REST_REQUEST );
+
+		// This is not the authentication you're looking for.
+		if ( ! apply_filters( 'rest_authentication_is_api_request', $api_request ) ) {
+			return $result;
+		}
+
 		// Another authentication method was used.
 		if ( ! is_null( $result ) ) {
 			return $result;
@@ -245,8 +253,8 @@ class WP_REST_Token {
 	 */
 	public function require_token() {
 		$require_token  = true;
-		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : false; // WPCS: sanitization okay.
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : false; // WPCS: sanitization okay.
+		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : false; // phpcs:ignore
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : false; // phpcs:ignore
 		$rest_uri       = self::get_rest_uri();
 
 		// User is already authenticated.
@@ -507,11 +515,11 @@ class WP_REST_Token {
 	public function get_auth_header() {
 
 		// Get HTTP Authorization Header.
-		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? $_SERVER['HTTP_AUTHORIZATION'] : false; // WPCS: sanitization okay.
+		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? $_SERVER['HTTP_AUTHORIZATION'] : false; // phpcs:ignore
 
 		// Check for alternative header.
 		if ( ! $header && isset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) {
-			$header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION']; // WPCS: sanitization okay.
+			$header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION']; // phpcs:ignore
 		}
 
 		// The HTTP Authorization Header is missing, return an error.
@@ -599,14 +607,39 @@ class WP_REST_Token {
 			);
 		}
 
-		if ( 'wp_user' === $token->data->user->type && get_userdata( $token->data->user->id ) === false ) {
-			return new WP_Error(
-				'rest_authentication_invalid_token_wp_user',
-				__( 'Token user is invalid.', 'jwt-auth' ),
-				array(
-					'status' => 403,
-				)
-			);
+		if ( 'wp_user' === $token->data->user->type ) {
+
+			$userdata = get_userdata( $token->data->user->id );
+
+			if ( false === $userdata ) {
+				return new WP_Error(
+					'rest_authentication_invalid_token_wp_user',
+					__( 'Token user is invalid.', 'jwt-auth' ),
+					array(
+						'status' => 403,
+					)
+				);
+			}
+
+			if ( $token->data->user->user_login !== $userdata->user_login ) {
+				return new WP_Error(
+					'rest_authentication_invalid_token_user_login',
+					__( 'Token user_login is invalid.', 'jwt-auth' ),
+					array(
+						'status' => 403,
+					)
+				);
+			}
+
+			if ( $token->data->user->user_email !== $userdata->user_email ) {
+				return new WP_Error(
+					'rest_authentication_invalid_token_user_email',
+					__( 'Token user_email is invalid.', 'jwt-auth' ),
+					array(
+						'status' => 403,
+					)
+				);
+			}
 		}
 
 		return true;

@@ -306,8 +306,8 @@ class WP_REST_Key_Pair {
 		// Retrieves a user if a valid key & secret is given.
 		$get_user = get_users(
 			array(
-				'meta_key'   => $key, // WPCS: slow query ok.
-				'meta_value' => wp_hash( $secret ), // WPCS: slow query ok.
+				'meta_key'   => $key, // phpcs:ignore
+				'meta_value' => wp_hash( $secret ), // phpcs:ignore
 			)
 		);
 
