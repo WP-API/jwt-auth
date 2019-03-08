@@ -211,16 +211,20 @@ class WP_REST_Token {
 	 */
 	public function authenticate( $result ) {
 
-		// Check for valid API requests.
-		$api_request = ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'REST_REQUEST' ) && REST_REQUEST );
-
-		// This is not the authentication you're looking for.
-		if ( ! apply_filters( 'rest_authentication_is_api_request', $api_request ) ) {
+		// Another authentication method was used.
+		if ( ! is_null( $result ) ) {
 			return $result;
 		}
 
-		// Another authentication method was used.
-		if ( ! is_null( $result ) ) {
+		/**
+		 * Check for REST request.
+		 *
+		 * @param bool $rest_request Whether or not this is a REST request.
+		 */
+		$rest_request = apply_filters( 'rest_authentication_is_rest_request', ( defined( 'REST_REQUEST' ) && REST_REQUEST ) );
+
+		// This is not the authentication you're looking for.
+		if ( ! $rest_request ) {
 			return $result;
 		}
 

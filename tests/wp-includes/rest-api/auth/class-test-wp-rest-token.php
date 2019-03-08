@@ -134,10 +134,14 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			)
 		);
 
-		add_filter( 'rest_authentication_is_api_request', '__return_true' );
-
 		// Another authentication method was used.
 		$this->assertEquals( 'alt_auth', $this->token->authenticate( 'alt_auth' ) );
+
+		// Not is REST request.
+		$this->assertNull( $this->token->authenticate( null ) );
+
+		// Fake the request.
+		add_filter( 'rest_authentication_is_rest_request', '__return_true' );
 
 		// Authentication is not required.
 		$mock = $this->getMockBuilder( get_class( $this->token ) )
@@ -191,10 +195,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$authenticate = $mock->authenticate( null );
 		$this->assertTrue( $authenticate );
 		$this->assertEquals( $user_id, get_current_user_id() );
-		remove_filter( 'rest_authentication_is_api_request', '__return_true' );
-
-		$authenticate = $mock->authenticate( null );
-		$this->assertNull( $authenticate );
+		remove_filter( 'rest_authentication_is_rest_request', '__return_true' );
 	}
 
 	/**
