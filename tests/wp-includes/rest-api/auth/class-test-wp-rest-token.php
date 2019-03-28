@@ -231,6 +231,18 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$_SERVER['REQUEST_URI'] = $token_uri;
 		$this->assertFalse( $this->token->require_token() );
 
+		// Some GET requests require authentication to work correctly (i.e. – fetching draft posts)
+		// If a token is present, treat it as though it's required.
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'validate_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'validate_token' )->willReturn( true );
+		$this->assertTrue( $mock->require_token() );
+
 		// Don't require authentication to generate a token.
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		$this->assertFalse( $this->token->require_token() );
