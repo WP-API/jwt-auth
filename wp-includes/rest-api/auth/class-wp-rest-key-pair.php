@@ -73,7 +73,9 @@ class WP_REST_Key_Pair {
 	 * @static
 	 */
 	public static function get_rest_uri() {
-		return sprintf( '/%s/%s/%s', rest_get_url_prefix(), self::_NAMESPACE_, self::_REST_BASE_ );
+		$full_url = get_rest_url( null, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) );
+		$path     = str_replace( site_url( '' ), '', $full_url ); // Remove the protocol and domain from the URI
+		return $path;
 	}
 
 	/**
