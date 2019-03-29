@@ -69,6 +69,9 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 
 		$this->user_id = $this->factory->user->create( $user_data );
 		$this->user    = get_user_by( 'id', $this->user_id );
+
+		// Enforce the expected permalink style
+		add_filter( 'default_option_permalink_structure', [ $this, 'defaultPermalinkStyle' ], 10, 0 );
 	}
 
 	/**
@@ -82,6 +85,7 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 		$this->user_id  = null;
 		$this->user     = null;
 		unset( $GLOBALS['wp_rest_server'] );
+		remove_filter( 'default_option_permalink_structure', [ $this, 'defaultPermalinkStyle' ], 10 );
 		parent::tearDown();
 	}
 
@@ -108,6 +112,10 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 	 */
 	public function test_get_rest_uri() {
 		$this->assertEquals( '/wp-json/wp/v2/key-pair', WP_REST_Key_Pair::get_rest_uri() );
+	}
+
+	public function defaultPermalinkStyle() {
+		return '/%postname%/';
 	}
 
 	/**
