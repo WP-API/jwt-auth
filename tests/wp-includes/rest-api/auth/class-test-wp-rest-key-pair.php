@@ -112,6 +112,10 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 	 */
 	public function test_get_rest_uri() {
 		$this->assertEquals( '/wp-json/wp/v2/key-pair', WP_REST_Key_Pair::get_rest_uri() );
+
+		add_filter( 'default_option_permalink_structure', '__return_false', 20, 0 );
+		$this->assertEquals( '/index.php?rest_route=/wp/v2/key-pair', WP_REST_Key_Pair::get_rest_uri() );
+		remove_filter( 'default_option_permalink_structure', '__return_false', 20 );
 	}
 
 	public function defaultPermalinkStyle() {
