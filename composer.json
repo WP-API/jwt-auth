@@ -1,5 +1,5 @@
 {
-  "name": "jwt-auth",
+  "name": "wp-api/jwt-auth",
   "type": "wordpress-plugin",
   "description": "Experimental JWT Authentication plugin.",
   "homepage": "https://github.com/WP-API/jwt-auth",
