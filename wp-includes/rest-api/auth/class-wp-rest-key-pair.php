@@ -264,6 +264,10 @@ class WP_REST_Key_Pair {
 	/**
 	 * Fires after the user's password is reset.
 	 *
+	 * When a user resets their password this method will deleted all of
+	 * the application passwords associated with their account. In turn
+	 * this will renders all JSON Web Tokens invalid for their account
+	 *
 	 * @param int $user_id The user ID.
 	 */
 	public function profile_update( $user_id ) {
