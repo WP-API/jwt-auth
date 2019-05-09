@@ -48,7 +48,7 @@
   "extra": {
     "copy-file": {
       "tests/autoload.php": "tests/wp-tests/phpunit/wp-tests-config.php",
-      "vendor/firebase/php-jwt/src/": "wp-includes/rest-api/auth/jwt/"
+      "vendor/firebase/php-jwt/src/": "wp-includes/php-jwt/"
     },
     "hooks": {
       "pre-commit": "./vendor/xwp/wp-dev-lib/scripts/pre-commit"

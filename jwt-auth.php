@@ -47,7 +47,7 @@ add_action( 'admin_init', 'jwt_auth_version_check' );
 function jwt_auth_loader() {
 
 	// JWT Classes.
-	foreach ( glob( JWT_AUTH_PLUGIN_DIR . '/wp-includes/rest-api/auth/jwt/*.php' ) as $filename ) {
+	foreach ( glob( JWT_AUTH_PLUGIN_DIR . '/wp-includes/php-jwt/*.php' ) as $filename ) {
 		require_once $filename;
 	}
 
