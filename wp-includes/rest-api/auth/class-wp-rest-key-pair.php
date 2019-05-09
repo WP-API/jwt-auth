@@ -73,9 +73,7 @@ class WP_REST_Key_Pair {
 	 * @static
 	 */
 	public static function get_rest_uri() {
-		$full_url = get_rest_url( null, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) );
-		$path     = str_replace( site_url( '' ), '', $full_url ); // Remove the protocol and domain from the URI
-		return $path;
+		return get_rest_url( null, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) );
 	}
 
 	/**
@@ -308,7 +306,8 @@ class WP_REST_Key_Pair {
 	public function require_token( $require_token, $request_uri, $request_method ) {
 
 		// Don't require token authentication to manage key-pairs.
-		if ( ( 'POST' === $request_method || 'DELETE' === $request_method ) && false !== strpos( $request_uri, self::get_rest_uri() ) ) {
+		$is_token_uri = false !== strpos( site_url( $request_uri ), self::get_rest_uri() );
+		if ( ( 'POST' === $request_method || 'DELETE' === $request_method ) && $is_token_uri ) {
 			$require_token = false;
 		}
 
