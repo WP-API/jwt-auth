@@ -396,11 +396,6 @@ class WP_REST_Key_Pair {
 	 */
 	public function payload( $payload, $user ) {
 
-		// Now that token can be revoked, expire the token in 365 days instead of the default 7 days.
-		if ( isset( $payload['iat'] ) ) {
-			$payload['exp'] = $payload['iat'] + ( DAY_IN_SECONDS * 365 );
-		}
-
 		// Set the api_key. which we use later to validate a key-pair has not already been revoked.
 		if ( isset( $user->data->api_key ) && isset( $payload['data']['user'] ) ) {
 			$payload['data']['user']['api_key'] = $user->data->api_key;
