@@ -199,6 +199,145 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test authenticate_refresh_token().
+	 *
+	 * @covers ::authenticate_refresh_token()
+	 * @since 0.1
+	 */
+	public function test_authenticate_refresh_token() {
+		$user_data = array(
+			'role'       => 'administrator',
+			'user_login' => 'testuser',
+			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
+		);
+
+		$request = new WP_REST_Request( 'POST', 'wp/v2/key-pair' );
+		$user_id = $this->factory->user->create( $user_data );
+
+		$jwt = json_decode(
+			wp_json_encode(
+				array(
+					'data' => array(
+						'user' => array(
+							'type'       => 'wp_user',
+							'user_login' => 'testuser',
+							'user_email' => 'testuser@sample.org',
+						),
+					),
+				)
+			)
+		);
+
+		// Another authentication method was used.
+		$this->assertEquals( 'alt_auth', $this->token->authenticate_refresh_token( 'alt_auth', $request ) );
+
+		// Missing `refresh_token` param.
+		$this->assertFalse( $this->token->authenticate_refresh_token( false, $request ) );
+
+		$request->set_param( 'refresh_token', '54321' );
+
+		// Decode token error.
+		$this->assertTrue( is_wp_error( $this->token->authenticate_refresh_token( false, $request ) ) );
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( $response->get_error_code(), 'rest_authentication_missing_refresh_token_api_key' );
+
+		$jwt->data->user->api_key = '12345';
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( $response->get_error_code(), 'rest_authentication_missing_refresh_token_user_id' );
+
+		$jwt->data->user->id = 1234;
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( $response->get_error_code(), 'rest_authentication_invalid_token_type' );
+
+		$jwt->data->user->token_type = 'refresh';
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( $response->get_error_code(), 'rest_authentication_invalid_refresh_token' );
+
+		$jwt->data->user->id = $user_id;
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertTrue( is_wp_error( $response ) );
+		$this->assertEquals( $response->get_error_code(), 'rest_authentication_revoked_api_key' );
+
+		$keypairs = array(
+			array(
+				'api_key'    => '12345',
+				'api_secret' => wp_hash( '54321' ),
+			),
+		);
+		foreach ( $keypairs as $keypair ) {
+			add_user_meta( $user_id, $keypair['api_key'], $keypair['api_secret'], true );
+		}
+		update_user_meta( $user_id, WP_REST_Key_Pair::_USERMETA_KEY_, $keypairs );
+
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'decode_token',
+				)
+			)
+			->getMock();
+		$mock->method( 'decode_token' )->willReturn( $jwt );
+
+		$response = $mock->authenticate_refresh_token( false, $request );
+		$this->assertEquals( '12345', $response->data->api_key );
+	}
+
+	/**
 	 * Test require_token().
 	 *
 	 * @covers ::require_token()
@@ -257,9 +396,10 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test generate_token() `rest_authentication_user` filter.
+	 * Test generate_payload() `rest_authentication_user` filter.
 	 *
 	 * @covers ::generate_token()
+	 * @covers ::generate_payload()
 	 * @since 0.1
 	 */
 	public function test_generate_token_rest_authentication_user() {
@@ -326,6 +466,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	 * Test generate_token().
 	 *
 	 * @covers ::generate_token()
+	 * @covers ::generate_payload()
 	 * @since 0.1
 	 */
 	public function test_generate_token() {
@@ -360,12 +501,6 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		};
 		add_filter( 'rest_authentication_token_private_claims', $private_claims );
 
-		$token_response = function( $response ) {
-			$response['refresh_token'] = 54321;
-			return $response;
-		};
-		add_filter( 'rest_authentication_token_response', $token_response );
-
 		// Test with correct credentials.
 		$request->set_param( 'password', $user_data['user_pass'] );
 		$token = $this->token->generate_token( $request );
@@ -379,10 +514,73 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$this->assertEquals( $user_data['user_login'], $token['data']['user']['user_login'] );
 		$this->assertEquals( $user_data['user_email'], $token['data']['user']['user_email'] );
 		$this->assertEquals( 12345, $token['data']['user']['api_key'] );
-		$this->assertEquals( 54321, $token['refresh_token'] );
 
 		remove_filter( 'rest_authentication_token_private_claims', $private_claims );
-		remove_filter( 'rest_authentication_token_response', $token_response );
+	}
+
+	/**
+	 * Test append_refresh_token().
+	 *
+	 * @covers ::append_refresh_token()
+	 * @since 0.1
+	 */
+	public function test_append_refresh_token() {
+		$user_data = array(
+			'role'       => 'administrator',
+			'user_login' => 'testuser',
+			'user_pass'  => 'testpassword',
+			'user_email' => 'testuser@sample.org',
+		);
+
+		$user_id = $this->factory->user->create( $user_data );
+		$request = new WP_REST_Request( 'POST', 'wp/v2/token' );
+
+		// Missing Bearer token from the header.
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'generate_payload',
+				)
+			)
+			->getMock();
+		$mock->method( 'generate_payload' )->willReturn(
+			new WP_Error(
+				'rest_authentication_error',
+				__( 'An error coming from the payload.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			)
+		);
+
+		$response = $this->token->append_refresh_token( array(), get_user_by( 'id', $user_id ), $request );
+		$this->assertArrayHasKey( 'refresh_token', $response );
+
+		$append_refresh_token = $mock->append_refresh_token( array(), get_user_by( 'id', $user_id ), $request );
+		$this->assertTrue( is_wp_error( $append_refresh_token ) );
+		$this->assertEquals( $append_refresh_token->get_error_code(), 'rest_authentication_error' );
+	}
+
+	/**
+	 * Test decode_token().
+	 *
+	 * @covers ::decode_token()
+	 * @since 0.1
+	 */
+	public function test_decode_token() {
+		// Unknown JWT Exception.
+		$mock = $this->getMockBuilder( get_class( $this->token ) )
+			->setMethods(
+				array(
+					'jwt',
+				)
+			)
+			->getMock();
+		$mock->method( 'jwt' )->will( $this->throwException( new Exception() ) );
+
+		$validate_token = $mock->decode_token( 'bad-token' );
+		$this->assertTrue( is_wp_error( $validate_token ) );
+		$this->assertEquals( $validate_token->get_error_code(), 'rest_authentication_token_error' );
 	}
 
 	/**
@@ -535,7 +733,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 				)
 			)
 			->getMock();
-		$mock->method( 'jwt' )->willReturn( new Exception() );
+		$mock->method( 'jwt' )->will( $this->throwException( new Exception() ) );
 
 		$validate_token = $mock->validate_token();
 		$this->assertTrue( is_wp_error( $validate_token ) );

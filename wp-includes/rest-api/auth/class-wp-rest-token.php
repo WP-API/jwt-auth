@@ -66,7 +66,9 @@ class WP_REST_Token {
 	 */
 	public function init() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ), 99 );
+		add_filter( 'rest_authentication_user', array( $this, 'authenticate_refresh_token' ), 10, 2 );
 		add_filter( 'rest_authentication_errors', array( $this, 'authenticate' ) );
+		add_filter( 'rest_authentication_token_response', array( $this, 'append_refresh_token' ), 10, 3 );
 	}
 
 	/**
@@ -89,43 +91,35 @@ class WP_REST_Token {
 	 */
 	public function register_routes() {
 		$args = array(
-			array(
-				'methods'  => WP_REST_Server::CREATABLE,
-				'callback' => array(
-					$this,
-					'generate_token',
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => array( $this, 'generate_token' ),
+			'args'     => array(
+				'username'   => array(
+					'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_user',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'args'     => array(
-					'username'   => array(
-						'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_user',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'password'   => array(
-						'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'api_key'    => array(
-						'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'api_secret' => array(
-						'description'       => __( 'The API secret of the user; requires also setting the api_key.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
+				'password'   => array(
+					'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
+				),
+				'api_key'    => array(
+					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
+				),
+				'api_secret' => array(
+					'description'       => __( 'The API secret of the user; requires also setting the api_key.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
-			'schema' => array(
-				$this,
-				'get_item_schema',
-			),
+			'schema'   => array( $this, 'get_item_schema' ),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_, $args );
 	}
@@ -249,6 +243,110 @@ class WP_REST_Token {
 	}
 
 	/**
+	 * Authenticate if the `refresh_token` is provided and return the user.
+	 *
+	 * @filter rest_authentication_user
+	 *
+	 * @param mixed           $user    The user that is being authenticated.
+	 * @param WP_REST_Request $request The REST request object.
+	 *
+	 * @return bool|object|mixed
+	 */
+	public function authenticate_refresh_token( $user, WP_REST_Request $request ) {
+
+		if ( false !== $user ) {
+			return $user;
+		}
+
+		$refresh_token = $request->get_param( 'refresh_token' );
+
+		if ( ! $refresh_token ) {
+			return $user;
+		}
+
+		// Decode the token.
+		$token = $this->decode_token( $refresh_token );
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+
+		if ( ! isset( $token->data->user->api_key ) ) {
+			return new WP_Error(
+				'rest_authentication_missing_refresh_token_api_key',
+				__( 'Refresh token user must have an API key.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		if ( ! isset( $token->data->user->id ) ) {
+			return new WP_Error(
+				'rest_authentication_missing_refresh_token_user_id',
+				__( 'Refresh token user must have an ID.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		if ( ! isset( $token->data->user->token_type ) || 'refresh' !== $token->data->user->token_type ) {
+			return new WP_Error(
+				'rest_authentication_invalid_token_type',
+				__( 'Refresh token user must have a token_type of refresh.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		// Retrieves a user if a valid refresh token is given.
+		$get_user = get_user_by( 'ID', $token->data->user->id );
+
+		if ( false === $get_user ) {
+			return new WP_Error(
+				'rest_authentication_invalid_refresh_token',
+				__( 'The refresh token is invalid.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		$found    = false;
+		$keypairs = get_user_meta( $token->data->user->id, WP_REST_Key_Pair::_USERMETA_KEY_, true );
+		foreach ( (array) $keypairs as $_key => $item ) {
+			if ( isset( $item['api_key'] ) && $item['api_key'] === $token->data->user->api_key ) {
+				$keypairs[ $_key ]['last_used'] = time();
+
+				$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? filter_var( wp_unslash( $_SERVER['REMOTE_ADDR'] ), FILTER_VALIDATE_IP ) : null;
+				if ( $ip ) {
+					$keypairs[ $_key ]['last_ip'] = $ip;
+				}
+				$found = true;
+				break;
+			}
+		}
+
+		if ( false === $found ) {
+			return new WP_Error(
+				'rest_authentication_revoked_api_key',
+				__( 'Refresh token is invalid the API key has been revoked.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		} else {
+			update_user_meta( $token->data->user->id, WP_REST_Key_Pair::_USERMETA_KEY_, array_values( $keypairs ) );
+		}
+
+		// Add the api_key to use when encoding the JWT.
+		$get_user->data->api_key = $token->data->user->api_key;
+
+		return $get_user;
+	}
+
+	/**
 	 * Determine if the request needs to be JWT authenticated.
 	 *
 	 * @since 0.1
@@ -322,38 +420,6 @@ class WP_REST_Token {
 			return $user;
 		}
 
-		if ( false !== $user ) {
-			if ( ! isset( $user->ID ) ) {
-				return new WP_Error(
-					'rest_authentication_missing_user_id',
-					__( 'The user ID is missing from the user object.', 'jwt-auth' ),
-					array(
-						'status' => 403,
-					)
-				);
-			}
-
-			if ( ! isset( $user->data->user_login ) ) {
-				return new WP_Error(
-					'rest_authentication_missing_user_login',
-					__( 'The user_login is missing from the user object.', 'jwt-auth' ),
-					array(
-						'status' => 403,
-					)
-				);
-			}
-
-			if ( ! isset( $user->data->user_email ) ) {
-				return new WP_Error(
-					'rest_authentication_missing_user_email',
-					__( 'The user_email is missing from the user object.', 'jwt-auth' ),
-					array(
-						'status' => 403,
-					)
-				);
-			}
-		}
-
 		/**
 		 * If alternate method for authentication is not provided then expect a username and password.
 		 */
@@ -381,11 +447,82 @@ class WP_REST_Token {
 		}
 
 		/**
-		 * Determines the number of days a token will be available for processing.
+		 * Determines the number of seconds a token will be available for processing.
 		 *
-		 * @param int $days Number of days. Default is `7` days.
+		 * @param int $exp Number of seconds until the token expires. Default is `3600`, which is 1 week.
 		 */
-		$days = apply_filters( 'rest_authentication_token_expire_days', 7 );
+		$expires = apply_filters( 'rest_authentication_token_expires', WEEK_IN_SECONDS );
+
+		// Generate the payload.
+		$payload = $this->generate_payload( $user, $request, $expires, false );
+
+		if ( is_wp_error( $payload ) ) {
+			return $payload;
+		}
+
+		// Generate JWT token.
+		$token = $this->jwt( 'encode', $payload, $this->secret_key );
+
+		/**
+		 * Return response containing the JWT token and $user data.
+		 *
+		 * @param array           $response The REST response.
+		 * @param WP_User|Object  $user The authenticated user object.
+		 * @param WP_REST_Request $request The authentication request.
+		 */
+		return apply_filters(
+			'rest_authentication_token_response',
+			array(
+				'access_token' => $token,
+				'data'         => $payload['data'],
+				'exp'          => $expires,
+			),
+			$user,
+			$request
+		);
+	}
+
+	/**
+	 * Add a refresh token to the JWT token.
+	 *
+	 * @param WP_User|Object  $user    The authenticated user object.
+	 * @param WP_REST_Request $request The authentication request.
+	 * @param int             $expires The number of seconds until the token expires.
+	 * @param boolean         $refresh Whether the payload is for a refresh token or not.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function generate_payload( $user, WP_REST_Request $request, $expires, $refresh = false ) {
+		if ( ! isset( $user->ID ) ) {
+			return new WP_Error(
+				'rest_authentication_missing_user_id',
+				__( 'The user ID is missing from the user object.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		if ( ! isset( $user->data->user_login ) ) {
+			return new WP_Error(
+				'rest_authentication_missing_user_login',
+				__( 'The user_login is missing from the user object.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
+		if ( ! isset( $user->data->user_email ) ) {
+			return new WP_Error(
+				'rest_authentication_missing_user_email',
+				__( 'The user_email is missing from the user object.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
+
 		$time = time();
 
 		// JWT Reserved claims.
@@ -393,7 +530,7 @@ class WP_REST_Token {
 			'iss' => get_bloginfo( 'url' ), // Token issuer.
 			'iat' => $time, // Token issued at.
 			'nbf' => $time, // Token accepted not before.
-			'exp' => $time + ( DAY_IN_SECONDS * absint( $days ) ), // Token expiry.
+			'exp' => $time + $expires, // Token expiry.
 		);
 
 		// JWT Private claims.
@@ -407,6 +544,10 @@ class WP_REST_Token {
 				),
 			),
 		);
+
+		if ( true === $refresh ) {
+			$private['data']['user']['token_type'] = 'refresh';
+		}
 
 		/**
 		 * JWT Payload.
@@ -426,25 +567,61 @@ class WP_REST_Token {
 			$request
 		);
 
-		// Generate JWT token.
-		$token = $this->jwt( 'encode', $payload, $this->secret_key );
+		return $payload;
+	}
+
+	/**
+	 * Append a refresh token to the JWT token REST response.
+	 *
+	 * @param array           $response The REST response.
+	 * @param WP_User|Object  $user The authenticated user object.
+	 * @param WP_REST_Request $request The authentication request.
+	 *
+	 * @return mixed
+	 */
+	public function append_refresh_token( $response, $user, WP_REST_Request $request ) {
 
 		/**
-		 * Return response containing the JWT token and $user data.
+		 * Determines the number of seconds a refresh token will be valid.
 		 *
-		 * @param array           $response The REST response.
-		 * @param WP_User|Object  $user The authenticated user object.
-		 * @param WP_REST_Request $request The authentication request.
+		 * @param int $expires Number of seconds until the refresh token expires. Default is `31536000`, which is 1 year.
 		 */
-		return apply_filters(
-			'rest_authentication_token_response',
-			array(
-				'access_token' => $token,
-				'data'         => $payload['data'],
-			),
-			$user,
-			$request
-		);
+		$expires = apply_filters( 'rest_authentication_refresh_token_expires', YEAR_IN_SECONDS );
+
+		// Generate the payload.
+		$payload = $this->generate_payload( $user, $request, $expires, true );
+
+		if ( is_wp_error( $payload ) ) {
+			return $payload;
+		}
+
+		// Generate JWT token.
+		$response['refresh_token'] = $this->jwt( 'encode', $payload, $this->secret_key );
+
+		return $response;
+	}
+
+	/**
+	 * Decode the JSON Web Token.
+	 *
+	 * @param string $token The encoded JWT.
+	 *
+	 * @return object|WP_Error Return the decoded JWT, or WP_Error on failure.
+	 */
+	public function decode_token( $token ) {
+		try {
+			return $this->jwt( 'decode', $token, $this->secret_key, array( 'HS256' ) );
+		} catch ( Exception $e ) {
+
+			// Return exceptions as WP_Errors.
+			return new WP_Error(
+				'rest_authentication_token_error',
+				__( 'Invalid bearer token.', 'jwt-auth' ),
+				array(
+					'status' => 403,
+				)
+			);
+		}
 	}
 
 	/**
@@ -466,49 +643,38 @@ class WP_REST_Token {
 			return $token;
 		}
 
-		// Decode and validate the access token.
-		try {
-
-			// Decode the token.
-			$jwt = $this->jwt( 'decode', $token, $this->secret_key, array( 'HS256' ) );
-
-			// Determine if the token issuer is valid.
-			$issuer_valid = $this->validate_issuer( $jwt->iss );
-			if ( is_wp_error( $issuer_valid ) ) {
-				return $issuer_valid;
-			}
-
-			// Determine if the token user is valid.
-			$user_valid = $this->validate_user( $jwt );
-			if ( is_wp_error( $user_valid ) ) {
-				return $user_valid;
-			}
-
-			// Determine if the token has expired.
-			$expiration_valid = $this->validate_expiration( $jwt );
-			if ( is_wp_error( $expiration_valid ) ) {
-				return $expiration_valid;
-			}
-
-			/**
-			 * Filter response containing the JWT token.
-			 *
-			 * @param object $jwt The JSON Web Token or error.
-			 *
-			 * @return object|WP_Error
-			 */
-			return apply_filters( 'rest_authentication_validate_token', $jwt );
-		} catch ( Exception $e ) {
-
-			// Return exceptions as WP_Errors.
-			return new WP_Error(
-				'rest_authentication_token_error',
-				__( 'Invalid bearer token.', 'jwt-auth' ),
-				array(
-					'status' => 403,
-				)
-			);
+		// Decode the token.
+		$jwt = $this->decode_token( $token );
+		if ( is_wp_error( $jwt ) ) {
+			return $jwt;
 		}
+
+		// Determine if the token issuer is valid.
+		$issuer_valid = $this->validate_issuer( $jwt->iss );
+		if ( is_wp_error( $issuer_valid ) ) {
+			return $issuer_valid;
+		}
+
+		// Determine if the token user is valid.
+		$user_valid = $this->validate_user( $jwt );
+		if ( is_wp_error( $user_valid ) ) {
+			return $user_valid;
+		}
+
+		// Determine if the token has expired.
+		$expiration_valid = $this->validate_expiration( $jwt );
+		if ( is_wp_error( $expiration_valid ) ) {
+			return $expiration_valid;
+		}
+
+		/**
+		 * Filter response containing the JWT token.
+		 *
+		 * @param object $jwt The JSON Web Token or error.
+		 *
+		 * @return object|WP_Error
+		 */
+		return apply_filters( 'rest_authentication_validate_token', $jwt );
 	}
 
 	/**
@@ -521,11 +687,11 @@ class WP_REST_Token {
 	public function get_auth_header() {
 
 		// Get HTTP Authorization Header.
-		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? $_SERVER['HTTP_AUTHORIZATION'] : false; // phpcs:ignore
+		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? sanitize_text_field( $_SERVER['HTTP_AUTHORIZATION'] ) : false;
 
 		// Check for alternative header.
 		if ( ! $header && isset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) {
-			$header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION']; // phpcs:ignore
+			$header = sanitize_text_field( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
 		}
 
 		// The HTTP Authorization Header is missing, return an error.
