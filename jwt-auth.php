@@ -26,16 +26,15 @@ define( 'JWT_AUTH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'JWT_AUTH_VERSION', '0.1' );
 
 /**
- * Requires running PHP 5.3 or above.
+ * Requires running PHP 5.6.20 or above.
  *
  * @since 0.1
  * @codeCoverageIgnore
  */
 function jwt_auth_version_check() {
-
-	if ( version_compare( PHP_VERSION, '5.3', '<' ) ) {
+	if ( version_compare( PHP_VERSION, '5.6.20', '<' ) ) {
 		deactivate_plugins( plugin_basename( __FILE__ ) );
-		wp_die( esc_html__( 'The JWT Auth plugin requires PHP Version 5.3 or above.', 'jwt-auth' ) );
+		wp_die( esc_html__( 'The JWT Auth plugin requires PHP Version 5.6.20 or above.', 'jwt-auth' ) );
 	}
 }
 add_action( 'admin_init', 'jwt_auth_version_check' );
@@ -47,18 +46,18 @@ add_action( 'admin_init', 'jwt_auth_version_check' );
  */
 function jwt_auth_loader() {
 
-	/** JWT Classes */
+	// JWT Classes.
 	foreach ( glob( JWT_AUTH_PLUGIN_DIR . '/wp-includes/rest-api/auth/jwt/*.php' ) as $filename ) {
 		require_once $filename;
 	}
 
-	/** WP_REST_Token Class */
+	// WP_REST_Token Class.
 	require_once JWT_AUTH_PLUGIN_DIR . '/wp-includes/rest-api/auth/class-wp-rest-token.php';
 
-	/** WP_REST_Key_Pair Class */
+	// WP_REST_Key_Pair Class.
 	require_once JWT_AUTH_PLUGIN_DIR . '/wp-includes/rest-api/auth/class-wp-rest-key-pair.php';
 
-	/** WP_Key_Pair_List_Table Class */
+	// WP_Key_Pair_List_Table Class.
 	require_once JWT_AUTH_PLUGIN_DIR . '/wp-admin/includes/class-wp-key-pair-list-table.php';
 
 	// Initialize JSON Web Tokens.

@@ -6,7 +6,7 @@
   "license": "GPLv2",
   "prefer-stable" : true,
   "require": {
-    "php": ">=5.3"
+    "php": ">=5.6.20"
   },
   "require-dev": {
     "brainmaestro/composer-git-hooks": "^2.6.0",
@@ -16,7 +16,7 @@
     "php-coveralls/php-coveralls": "^2.1",
     "slowprog/composer-copy-file": "0.2.1",
     "wp-coding-standards/wpcs": "*",
-    "xwp/wp-dev-lib": "^1.0.0"
+    "xwp/wp-dev-lib": "^1.1.1"
   },
   "scripts": {
     "phpcs": [
