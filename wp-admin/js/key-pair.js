@@ -117,7 +117,8 @@
 			$keyPairSection.after( tmplNewTokenKeyPair( {
 				name: name,
 				api_key: apiKey,
-				access_token: response.access_token
+				access_token: response.access_token,
+				refresh_token: response.refresh_token
 			} ) );
 
 			$( document ).on( 'click', '.key-pair-token-download', function( event ) {

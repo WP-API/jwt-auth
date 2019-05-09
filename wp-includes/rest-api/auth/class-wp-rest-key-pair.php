@@ -396,11 +396,6 @@ class WP_REST_Key_Pair {
 	 */
 	public function payload( $payload, $user ) {
 
-		// Now that token can be revoked, expire the token in 365 days instead of the default 7 days.
-		if ( isset( $payload['iat'] ) ) {
-			$payload['exp'] = $payload['iat'] + ( DAY_IN_SECONDS * 365 );
-		}
-
 		// Set the api_key. which we use later to validate a key-pair has not already been revoked.
 		if ( isset( $user->data->api_key ) && isset( $payload['data']['user'] ) ) {
 			$payload['data']['user']['api_key'] = $user->data->api_key;
@@ -712,7 +707,7 @@ class WP_REST_Key_Pair {
 						<# if ( data.message ) { #>
 						<div class="notice notice-error"><p>{{{ data.message }}}</p></div>
 						<# } #>
-						<# if ( ! data.access_token ) { #>
+						<# if ( ! data.access_token || ! data.refresh_token ) { #>
 						<p>
 							<?php
 							printf(
@@ -738,11 +733,18 @@ class WP_REST_Key_Pair {
 							<?php
 							printf(
 								/* translators: %s: JSON Web Token */
-								esc_html_x( 'Your new JSON Web Token is: %s', 'JSON Web Token', 'jwt-auth' ),
+								esc_html_x( 'Your new access token is: %s', 'Access Token', 'jwt-auth' ),
 								'<kbd>{{ data.access_token }}</kbd>'
 							);
 							?>
-							<p><?php esc_attr_e( 'Be sure to save this JSON Web Token in a safe location, you will not be able to retrieve it ever again. Once you click dismiss it is gone forever.', 'jwt-auth' ); ?></p>
+							<?php
+							printf(
+								/* translators: %s: JSON Web Token */
+								esc_html_x( 'Your new refresh token is: %s', 'Refresh Token', 'jwt-auth' ),
+								'<kbd>{{ data.refresh_token }}</kbd>'
+							);
+							?>
+							<p><?php esc_attr_e( 'Be sure to save these JSON Web Tokens in a safe location, you will not be able to retrieve them ever again. Once you click dismiss they\'re is gone forever.', 'jwt-auth' ); ?></p>
 						</div>
 						<button class="button button-secondary key-pair-token-download"><?php esc_attr_e( 'Download', 'jwt-auth' ); ?></button>
 						<# } #>

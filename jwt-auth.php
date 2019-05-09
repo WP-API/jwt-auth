@@ -11,13 +11,13 @@
  * Plugin URI:        https://github.com/WP-API/jwt-auth
  * Description:       Feature plugin to bring JSON Web Token REST API authentication to Core
  * Version:           0.1
- * Author:            XWP, and contributors
+ * Author:            WP-API
  * Author URI:        https://github.com/WP-API/jwt-auth/graphs/contributors
  * Text Domain:       jwt-auth
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * GitHub Plugin URI: https://github.com/WP-API/jwt-auth
- * Requires PHP:      5.3.0
+ * Requires PHP:      5.6.20
  * Requires WP:       4.4.0
  */
 

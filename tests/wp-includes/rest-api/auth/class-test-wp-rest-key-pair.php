@@ -299,7 +299,7 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 		$time     = time();
 		$reserved = array(
 			'iat'  => $time, // Token issued at.
-			'exp'  => $time + ( DAY_IN_SECONDS * 7 ), // Token expiry.
+			'exp'  => $time + WEEK_IN_SECONDS, // Token expiry.
 			'data' => array(
 				'user' => array(
 					'type' => 'wp_user',
@@ -318,7 +318,6 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 		);
 
 		$payload = $this->key_pair->payload( $reserved, $user );
-		$this->assertEquals( $reserved['iat'] + ( DAY_IN_SECONDS * 365 ), $payload['exp'] );
 		$this->assertEquals( $payload['data']['user']['api_key'], 12345 );
 	}
 
