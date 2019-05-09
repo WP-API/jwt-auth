@@ -396,7 +396,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	 * @covers ::generate_payload()
 	 * @since 0.1
 	 */
-	public function test_generate_payload_rest_authentication_user() {
+	public function test_generate_token_rest_authentication_user() {
 		$request  = new WP_REST_Request( 'POST', 'wp/v2/token' );
 		$function = function() {
 			return new WP_Error(
