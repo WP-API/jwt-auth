@@ -707,7 +707,7 @@ class WP_REST_Key_Pair {
 						<# if ( data.message ) { #>
 						<div class="notice notice-error"><p>{{{ data.message }}}</p></div>
 						<# } #>
-						<# if ( ! data.access_token ) { #>
+						<# if ( ! data.access_token || ! data.refresh_token ) { #>
 						<p>
 							<?php
 							printf(
@@ -733,11 +733,18 @@ class WP_REST_Key_Pair {
 							<?php
 							printf(
 								/* translators: %s: JSON Web Token */
-								esc_html_x( 'Your new JSON Web Token is: %s', 'JSON Web Token', 'jwt-auth' ),
+								esc_html_x( 'Your new access token is: %s', 'Access Token', 'jwt-auth' ),
 								'<kbd>{{ data.access_token }}</kbd>'
 							);
 							?>
-							<p><?php esc_attr_e( 'Be sure to save this JSON Web Token in a safe location, you will not be able to retrieve it ever again. Once you click dismiss it is gone forever.', 'jwt-auth' ); ?></p>
+							<?php
+							printf(
+								/* translators: %s: JSON Web Token */
+								esc_html_x( 'Your new refresh token is: %s', 'Refresh Token', 'jwt-auth' ),
+								'<kbd>{{ data.refresh_token }}</kbd>'
+							);
+							?>
+							<p><?php esc_attr_e( 'Be sure to save these JSON Web Tokens in a safe location, you will not be able to retrieve them ever again. Once you click dismiss they\'re is gone forever.', 'jwt-auth' ); ?></p>
 						</div>
 						<button class="button button-secondary key-pair-token-download"><?php esc_attr_e( 'Download', 'jwt-auth' ); ?></button>
 						<# } #>
