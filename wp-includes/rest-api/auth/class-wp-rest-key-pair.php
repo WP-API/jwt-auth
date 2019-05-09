@@ -85,78 +85,60 @@ class WP_REST_Key_Pair {
 	 */
 	public function register_routes() {
 		$args = array(
-			array(
-				'methods'  => WP_REST_Server::CREATABLE,
-				'callback' => array(
-					$this,
-					'generate_key_pair',
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => array( $this, 'generate_key_pair' ),
+			'args'     => array(
+				'name'    => array(
+					'description'       => esc_html__( 'The name of the key-pair.', 'jwt-auth' ),
+					'type'              => 'string',
+					'required'          => true,
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'args'     => array(
-					'name'    => array(
-						'description'       => esc_html__( 'The name of the key-pair.', 'jwt-auth' ),
-						'type'              => 'string',
-						'required'          => true,
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'user_id' => array(
-						'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
+				'user_id' => array(
+					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
+					'type'              => 'integer',
+					'required'          => true,
+					'sanitize_callback' => 'absint',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
-			'schema' => array(
-				$this,
-				'get_item_schema',
-			),
+			'schema'   => array( $this, 'get_item_schema' ),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/(?P<user_id>[\d]+)', $args );
 
 		$args = array(
-			array(
-				'methods'  => WP_REST_Server::DELETABLE,
-				'callback' => array(
-					$this,
-					'delete_all_key_pairs',
-				),
-				'args'     => array(
-					'user_id' => array(
-						'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
+			'methods'  => WP_REST_Server::DELETABLE,
+			'callback' => array( $this, 'delete_all_key_pairs' ),
+			'args'     => array(
+				'user_id' => array(
+					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
+					'type'              => 'integer',
+					'required'          => true,
+					'sanitize_callback' => 'absint',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/(?P<user_id>[\d]+)/revoke-all', $args );
 
 		$args = array(
-			array(
-				'methods'  => WP_REST_Server::DELETABLE,
-				'callback' => array(
-					$this,
-					'delete_key_pair',
+			'methods'  => WP_REST_Server::DELETABLE,
+			'callback' => array( $this, 'delete_key_pair' ),
+			'args'     => array(
+				'user_id' => array(
+					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
+					'type'              => 'integer',
+					'required'          => true,
+					'sanitize_callback' => 'absint',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'args'     => array(
-					'user_id' => array(
-						'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'api_key' => array(
-						'description'       => esc_html__( 'The API key being revoked.', 'jwt-auth' ),
-						'type'              => 'string',
-						'required'          => true,
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
+				'api_key' => array(
+					'description'       => esc_html__( 'The API key being revoked.', 'jwt-auth' ),
+					'type'              => 'string',
+					'required'          => true,
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
 		);
@@ -279,6 +261,10 @@ class WP_REST_Key_Pair {
 	/**
 	 * Fires after the user's password is reset.
 	 *
+	 * When a user resets their password this method will deleted all of
+	 * the application passwords associated with their account. In turn
+	 * this will renders all JSON Web Tokens invalid for their account
+	 *
 	 * @param int $user_id The user ID.
 	 */
 	public function profile_update( $user_id ) {
@@ -317,7 +303,9 @@ class WP_REST_Key_Pair {
 	 * Authenticate the key-pair if API key and API secret is provided and return the user.
 	 *
 	 * If not authenticated, send back the original $user value to allow other authentication
-	 * methods to attempt authentication.
+	 * methods to attempt authentication. If the initial value of `$user` is false this method
+	 * will return a `WP_User` object on success or a `WP_Error` object on failure. However,
+	 * if the value is not `false` it will return that value, which could be any type of object.
 	 *
 	 * @filter rest_authentication_user
 	 *
@@ -393,6 +381,11 @@ class WP_REST_Key_Pair {
 
 	/**
 	 * Filters the JWT Payload.
+	 *
+	 * Due to the fact that `$user` could have been filtered the object type is technically
+	 * unknown. However, likely a `WP_User` object if auth has not been filtered. In any
+	 * case, the object must have the `$user->data->api_key` property in order to connect
+	 * the API key to the JWT payload and allow for token invalidation.
 	 *
 	 * @filter rest_authentication_token_private_claims
 	 *

@@ -89,43 +89,35 @@ class WP_REST_Token {
 	 */
 	public function register_routes() {
 		$args = array(
-			array(
-				'methods'  => WP_REST_Server::CREATABLE,
-				'callback' => array(
-					$this,
-					'generate_token',
+			'methods'  => WP_REST_Server::CREATABLE,
+			'callback' => array( $this, 'generate_token' ),
+			'args'     => array(
+				'username'   => array(
+					'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_user',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'args'     => array(
-					'username'   => array(
-						'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_user',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'password'   => array(
-						'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'api_key'    => array(
-						'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'api_secret' => array(
-						'description'       => __( 'The API secret of the user; requires also setting the api_key.', 'jwt-auth' ),
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
+				'password'   => array(
+					'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
+				),
+				'api_key'    => array(
+					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
+				),
+				'api_secret' => array(
+					'description'       => __( 'The API secret of the user; requires also setting the api_key.', 'jwt-auth' ),
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
-			'schema' => array(
-				$this,
-				'get_item_schema',
-			),
+			'schema'   => array( $this, 'get_item_schema' ),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_, $args );
 	}

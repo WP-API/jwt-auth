@@ -10,7 +10,7 @@
 	<!-- Ignoring Files and Folders:
 		https://github.com/squizlabs/PHP_CodeSniffer/wiki/Advanced-Usage#ignoring-files-and-folders -->
 	<exclude-pattern>/vendor/*</exclude-pattern>
-	<exclude-pattern>/wp-includes/rest-api/auth/jwt/*</exclude-pattern>
+	<exclude-pattern>/wp-includes/php-jwt/*</exclude-pattern>
 	<exclude-pattern>/tests/wp-tests/*</exclude-pattern>
 
 	<!-- How to scan -->
