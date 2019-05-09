@@ -291,8 +291,12 @@ class WP_REST_Key_Pair {
 	 */
 	public function require_token( $require_token, $request_uri, $request_method ) {
 
+		// Check both absolute and relative URIs
+		$is_token_uri =
+			false !== strpos( $request_uri, self::get_rest_uri() ) &&
+			false !== strpos( site_url( $request_uri ), self::get_rest_uri() );
+
 		// Don't require token authentication to manage key-pairs.
-		$is_token_uri = false !== strpos( site_url( $request_uri ), self::get_rest_uri() );
 		if ( ( 'POST' === $request_method || 'DELETE' === $request_method ) && $is_token_uri ) {
 			$require_token = false;
 		}
