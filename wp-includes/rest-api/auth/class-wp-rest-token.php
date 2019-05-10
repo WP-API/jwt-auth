@@ -374,8 +374,10 @@ class WP_REST_Token {
 			$require_token = false;
 		}
 
-		// GET requests do not need to be authenticated.
-		if ( 'GET' === $request_method ) {
+		// GET requests do not require authentication, but if
+		// the Authorization header is provided, requests should
+		// be performed as the user corresponding to that token.
+		if ( 'GET' === $request_method && is_wp_error( $this->get_auth_header() ) ) {
 			$require_token = false;
 		}
 
