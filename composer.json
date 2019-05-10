@@ -1,7 +1,7 @@
 {
   "name": "wp-api/jwt-auth",
   "type": "wordpress-plugin",
-  "description": "Experimental JWT Authentication plugin.",
+  "description": "Enable JSON Web Token authentication for the WordPress REST API.",
   "homepage": "https://github.com/WP-API/jwt-auth",
   "license": "GPLv2",
   "prefer-stable" : true,

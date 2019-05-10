@@ -98,21 +98,15 @@ class WP_REST_Token {
 	 */
 	public function register_routes() {
 		$args = array(
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => array( $this, 'validate' ),
+		);
+		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/validate', $args );
+
+		$args = array(
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => array( $this, 'generate_token' ),
 			'args'     => array(
-				'username'   => array(
-					'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
-					'type'              => 'string',
-					'sanitize_callback' => 'sanitize_user',
-					'validate_callback' => 'rest_validate_request_arg',
-				),
-				'password'   => array(
-					'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
-					'type'              => 'string',
-					'sanitize_callback' => 'sanitize_text_field',
-					'validate_callback' => 'rest_validate_request_arg',
-				),
 				'api_key'    => array(
 					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
 					'type'              => 'string',
@@ -144,12 +138,12 @@ class WP_REST_Token {
 			'title'      => __( 'JSON Web Token', 'jwt-auth' ),
 			'type'       => 'object',
 			'properties' => array(
-				'access_token' => array(
+				'access_token'  => array(
 					'description' => esc_html__( 'JSON Web Token.', 'jwt-auth' ),
 					'type'        => 'string',
 					'readonly'    => true,
 				),
-				'data'         => array(
+				'data'          => array(
 					'description' => esc_html__( 'JSON Web Token private claim data.', 'jwt-auth' ),
 					'type'        => 'object',
 					'readonly'    => true,
@@ -187,6 +181,16 @@ class WP_REST_Token {
 							),
 						),
 					),
+				),
+				'exp'           => array(
+					'description' => esc_html__( 'The number of seconds until the token expires.', 'jwt-auth' ),
+					'type'        => 'integer',
+					'readonly'    => true,
+				),
+				'refresh_token' => array(
+					'description' => esc_html__( 'Refresh JSON Web Token.', 'jwt-auth' ),
+					'type'        => 'string',
+					'readonly'    => true,
 				),
 			),
 		);
@@ -376,8 +380,14 @@ class WP_REST_Token {
 			$require_token = false;
 		}
 
-		// GET requests do not need to be authenticated.
-		if ( 'GET' === $request_method ) {
+		/**
+		 * GET requests do not typically require authentication, but if the
+		 * Authorization header is provided, we will use it. WHat's happening
+		 * here is that `WP_REST_Token::get_auth_header` returns the bearer
+		 * token or a `WP_Error`. So if we have an error then we can safely skip
+		 * the GET request.
+		 */
+		if ( 'GET' === $request_method && is_wp_error( $this->get_auth_header() ) ) {
 			$require_token = false;
 		}
 
@@ -424,26 +434,10 @@ class WP_REST_Token {
 			return $user;
 		}
 
-		/**
-		 * If alternate method for authentication is not provided then expect a username and password.
-		 */
 		if ( false === $user ) {
-			$username = $request->get_param( 'username' );
-			$password = $request->get_param( 'password' );
-
-			// Attempt to authenticate the WordPress user.
-			$user = wp_authenticate( $username, $password );
-		}
-
-		if ( is_wp_error( $user ) ) {
-			$error_code    = $user->get_error_code();
-			$error_message = $user->get_error_message( $error_code );
-
-			// Strip tags from the wp_authenticate output.
-			$error_message = wp_strip_all_tags( preg_replace( '#<a.*?>.*?</a>#i', '', $error_message ), true );
 			return new WP_Error(
-				'rest_authentication_' . $error_code,
-				$error_message,
+				'rest_authentication_required_api_key_secret',
+				__( 'An API key-pair is required to generate a token.', 'jwt-auth' ),
 				array(
 					'status' => 403,
 				)
@@ -626,6 +620,76 @@ class WP_REST_Token {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Determine if a valid Bearer token has been provided and return when it expires.
+	 *
+	 * @return array Return information about whether the token has expired or not.
+	 */
+	public function validate() {
+
+		$response = array(
+			'code'    => 'rest_authentication_invalid_bearer_token',
+			'message' => __( 'Invalid bearer token.', 'jwt-auth' ),
+			'data'    => array(
+				'status' => 403,
+			),
+		);
+
+		// Get HTTP Authorization Header.
+		$header = $this->get_auth_header();
+		if ( is_wp_error( $header ) ) {
+			return $response;
+		}
+
+		// Get the Bearer token from the header.
+		$token = $this->get_token( $header );
+		if ( is_wp_error( $token ) ) {
+			return $response;
+		}
+
+		// Decode the token.
+		$jwt = $this->decode_token( $token );
+		if ( is_wp_error( $jwt ) ) {
+			return $response;
+		}
+
+		// Determine if the token issuer is valid.
+		$issuer_valid = $this->validate_issuer( $jwt->iss );
+		if ( is_wp_error( $issuer_valid ) ) {
+			return $response;
+		}
+
+		// Determine if the token user is valid.
+		$user_valid = $this->validate_user( $jwt );
+		if ( is_wp_error( $user_valid ) ) {
+			return $response;
+		}
+
+		// Determine if the token has expired.
+		$expiration_valid = $this->validate_expiration( $jwt );
+		if ( is_wp_error( $expiration_valid ) ) {
+			$response['code']    = 'rest_authentication_expired_bearer_token';
+			$response['message'] = __( 'Expired bearer token.', 'jwt-auth' );
+			return $response;
+		}
+
+		$response = array(
+			'code'    => 'rest_authentication_valid_access_token',
+			'message' => __( 'Valid access token.', 'jwt-auth' ),
+			'data'    => array(
+				'status' => 200,
+				'exp'    => $jwt->exp - time(),
+			),
+		);
+
+		if ( isset( $jwt->data->user->token_type ) && 'refresh' === $jwt->data->user->token_type ) {
+			$response['code']    = 'rest_authentication_valid_refresh_token';
+			$response['message'] = __( 'Valid refresh token.', 'jwt-auth' );
+		}
+
+		return $response;
 	}
 
 	/**
