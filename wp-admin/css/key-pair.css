@@ -28,11 +28,11 @@
     margin-top: 1px;
 }
 
-.new-key-pair-token kbd {
+.input-select {
     display: block;
-    margin-bottom: 1.5em;
-    overflow-wrap: break-word;
-    padding: 1em;
+	font-family: monospace;
+    margin: .6em 0 1.2em;
+	width: 100%;
 }
 
 input[name=new_token_api_secret] {

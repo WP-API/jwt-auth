@@ -677,7 +677,7 @@ class WP_REST_Key_Pair {
 							printf(
 								/* translators: %s: key-pair api_secret */
 								esc_html_x( 'Your new API secret password is: %s', 'API key-pair', 'jwt-auth' ),
-								'<kbd>{{ data.api_secret }}</kbd>'
+								'<input type="text" value="{{ data.api_secret }}" class="input-select" />'
 							);
 							?>
 						</div>
@@ -734,14 +734,14 @@ class WP_REST_Key_Pair {
 							printf(
 								/* translators: %s: JSON Web Token */
 								esc_html_x( 'Your new access token is: %s', 'Access Token', 'jwt-auth' ),
-								'<kbd>{{ data.access_token }}</kbd>'
+								'<input type="text" value="{{ data.access_token }}" class="input-select" />'
 							);
 							?>
 							<?php
 							printf(
 								/* translators: %s: JSON Web Token */
 								esc_html_x( 'Your new refresh token is: %s', 'Refresh Token', 'jwt-auth' ),
-								'<kbd>{{ data.refresh_token }}</kbd>'
+								'<input type="text" value="{{ data.refresh_token }}" class="input-select" />'
 							);
 							?>
 							<p><?php esc_attr_e( 'Be sure to save these JSON Web Tokens in a safe location, you will not be able to retrieve them ever again. Once you click dismiss they\'re gone forever.', 'jwt-auth' ); ?></p>
