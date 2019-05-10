@@ -93,7 +93,7 @@
 
 	$( document ).on( 'click', '.key-pair-token', function( e ) {
 		var $parent  = $( e.target ).closest( '.new-key-pair' ),
-			$input    = $( 'input[name=new_token_api_secret]' ),
+			$input    = $( 'input[name="new_token_api_secret"]' ),
 			apiKey    = $parent.data( 'api_key' ),
 			apiSecret = $input.val(),
 			name      = $parent.data( 'name' );

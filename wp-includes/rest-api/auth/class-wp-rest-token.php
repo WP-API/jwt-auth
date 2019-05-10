@@ -79,7 +79,14 @@ class WP_REST_Token {
 	 * @static
 	 */
 	public static function get_rest_uri() {
-		return sprintf( '/%s/%s/%s', rest_get_url_prefix(), self::_NAMESPACE_, self::_REST_BASE_ );
+		$blog_id = get_current_blog_id();
+		$prefix  = 'index.php?rest_route=';
+
+		if ( is_multisite() && get_blog_option( $blog_id, 'permalink_structure' ) || get_option( 'permalink_structure' ) ) {
+			$prefix = rest_get_url_prefix();
+		}
+
+		return sprintf( '/%s/%s/%s', $prefix, self::_NAMESPACE_, self::_REST_BASE_ );
 	}
 
 	/**
@@ -355,9 +362,8 @@ class WP_REST_Token {
 	 */
 	public function require_token() {
 		$require_token  = true;
-		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : false; // phpcs:ignore
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : false; // phpcs:ignore
-		$rest_uri       = self::get_rest_uri();
+		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( $_SERVER['REQUEST_URI'] ) : false;
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( $_SERVER['REQUEST_METHOD'] ) : false;
 
 		// User is already authenticated.
 		$user = wp_get_current_user();
@@ -366,7 +372,7 @@ class WP_REST_Token {
 		}
 
 		// Only check REST API requests.
-		if ( ! strpos( $request_uri, rest_get_url_prefix() ) ) {
+		if ( ! strpos( $request_uri, rest_get_url_prefix() ) && ! strpos( $request_uri, '?rest_route=' ) ) {
 			$require_token = false;
 		}
 
@@ -376,7 +382,7 @@ class WP_REST_Token {
 		}
 
 		// Don't require authentication to generate a token.
-		if ( 'POST' === $request_method && $rest_uri === $request_uri ) {
+		if ( 'POST' === $request_method && strpos( $request_uri, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) ) ) {
 			$require_token = false;
 		}
 

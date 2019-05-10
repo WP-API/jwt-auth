@@ -76,7 +76,11 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	 * @covers ::get_rest_uri()
 	 */
 	public function test_get_rest_uri() {
+		$this->assertEquals( '/index.php?rest_route=/wp/v2/token', WP_REST_Token::get_rest_uri() );
+
+		$this->set_permalink_structure( '/%postname%/' );
 		$this->assertEquals( '/wp-json/wp/v2/token', WP_REST_Token::get_rest_uri() );
+		$this->set_permalink_structure( '' );
 	}
 
 	/**
@@ -344,9 +348,8 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 	 * @since 0.1
 	 */
 	public function test_require_token() {
-		$prefix    = rest_get_url_prefix();
-		$token_uri = sprintf( '/%s/wp/v2/token', $prefix );
-		$posts_uri = sprintf( '/%s/wp/v2/posts', $prefix );
+		$token_uri = WP_REST_Token::get_rest_uri();
+		$posts_uri = sprintf( '/%s/wp/v2/posts', rest_get_url_prefix() );
 		$user_data = array(
 			'role'       => 'administrator',
 			'user_login' => 'testuser',

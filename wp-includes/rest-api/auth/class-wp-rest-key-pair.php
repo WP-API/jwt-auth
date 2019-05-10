@@ -73,7 +73,14 @@ class WP_REST_Key_Pair {
 	 * @static
 	 */
 	public static function get_rest_uri() {
-		return get_rest_url( null, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) );
+		$blog_id = get_current_blog_id();
+		$prefix  = 'index.php?rest_route=';
+
+		if ( is_multisite() && get_blog_option( $blog_id, 'permalink_structure' ) || get_option( 'permalink_structure' ) ) {
+			$prefix = rest_get_url_prefix();
+		}
+
+		return sprintf( '/%s/%s/%s', $prefix, self::_NAMESPACE_, self::_REST_BASE_ );
 	}
 
 	/**
@@ -291,13 +298,8 @@ class WP_REST_Key_Pair {
 	 */
 	public function require_token( $require_token, $request_uri, $request_method ) {
 
-		// Check both absolute and relative URIs
-		$is_token_uri =
-			false !== strpos( $request_uri, self::get_rest_uri() ) &&
-			false !== strpos( site_url( $request_uri ), self::get_rest_uri() );
-
 		// Don't require token authentication to manage key-pairs.
-		if ( ( 'POST' === $request_method || 'DELETE' === $request_method ) && $is_token_uri ) {
+		if ( ( 'POST' === $request_method || 'DELETE' === $request_method ) && strpos( $request_uri, sprintf( '/%s/%s', self::_NAMESPACE_, self::_REST_BASE_ ) ) ) {
 			$require_token = false;
 		}
 
@@ -786,10 +788,10 @@ class WP_REST_Key_Pair {
 					{{ data.last_ip }}
 				</td>
 				<td class="token column-token" data-colname="<?php esc_attr_e( 'Token', 'jwt-auth' ); ?>">
-					<input type="submit" name="token-key-pair-{{ data.api_key }}" class="button" id=="token-key-pair-{{ data.api_key }}" value="<?php esc_attr_e( 'New Token', 'jwt-auth' ); ?>">
+					<input type="submit" name="token-key-pair-{{ data.api_key }}" class="button" id="token-key-pair-{{ data.api_key }}" value="<?php esc_attr_e( 'New Token', 'jwt-auth' ); ?>">
 				</td>
 				<td class="revoke column-revoke" data-colname="<?php esc_attr_e( 'Revoke', 'jwt-auth' ); ?>">
-					<input type="submit" name="revoke-key-pair" class="button delete" id=="revoke-key-pair-{{ data.api_key }}" value="<?php esc_attr_e( 'Revoke', 'jwt-auth' ); ?>">
+					<input type="submit" name="revoke-key-pair" class="button delete" id="revoke-key-pair-{{ data.api_key }}" value="<?php esc_attr_e( 'Revoke', 'jwt-auth' ); ?>">
 				</td>
 			</tr>
 		</script>
