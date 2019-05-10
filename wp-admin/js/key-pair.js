@@ -155,6 +155,10 @@
 		}
 	} );
 
+	$( document ).on( 'click', '.input-select', function() {
+		$( this ).select();
+	} );
+
 	$( document ).on( 'click', '.key-pair-modal-dismiss', function( e ) {
 		e.preventDefault();
 
