@@ -471,32 +471,38 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 			'user_email' => 'testuser@sample.org',
 		);
 
+		$user_id = $this->factory->user->create( $user_data );
 		$request = new WP_REST_Request( 'POST', 'wp/v2/token' );
 
-		// Set incorrect credentials.
+		$keypairs = array(
+			array(
+				'api_key'    => '12345',
+				'api_secret' => wp_hash( '54321' ),
+			),
+		);
+		foreach ( $keypairs as $keypair ) {
+			add_user_meta( $user_id, $keypair['api_key'], $keypair['api_secret'], true );
+		}
+		update_user_meta( $user_id, WP_REST_Key_Pair::_USERMETA_KEY_, $keypairs );
+
 		$request->set_param( 'username', $user_data['user_login'] );
-		$request->set_param( 'password', 'incorrect-password' );
+		$request->set_param( 'password', $user_data['user_pass'] );
+
 		$token = $this->token->generate_token( $request );
 
-		// Test with invalid user.
+		// Try with basic auth.
 		$this->assertTrue( is_wp_error( $token ) );
-		$this->assertEquals( 'rest_authentication_invalid_username', $token->get_error_code() );
-
-		$user_id = $this->factory->user->create( $user_data );
-		$token   = $this->token->generate_token( $request );
-
-		// Test with incorrect credentials.
-		$this->assertTrue( is_wp_error( $token ) );
-		$this->assertEquals( 'rest_authentication_incorrect_password', $token->get_error_code() );
+		$this->assertEquals( 'rest_authentication_required_api_key_secret', $token->get_error_code() );
 
 		$private_claims = function( $payload ) {
-			$payload['data']['user']['api_key'] = 12345;
+			$payload['data']['user']['api_key'] = '12345';
 			return $payload;
 		};
 		add_filter( 'rest_authentication_token_private_claims', $private_claims );
 
-		// Test with correct credentials.
-		$request->set_param( 'password', $user_data['user_pass'] );
+		// Test key-pair.
+		$request->set_param( 'api_key', '12345' );
+		$request->set_param( 'api_secret', '54321' );
 		$token = $this->token->generate_token( $request );
 
 		// Test if access_token was generated.
@@ -507,7 +513,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$this->assertEquals( $user_id, $token['data']['user']['id'] );
 		$this->assertEquals( $user_data['user_login'], $token['data']['user']['user_login'] );
 		$this->assertEquals( $user_data['user_email'], $token['data']['user']['user_email'] );
-		$this->assertEquals( 12345, $token['data']['user']['api_key'] );
+		$this->assertEquals( '12345', $token['data']['user']['api_key'] );
 
 		remove_filter( 'rest_authentication_token_private_claims', $private_claims );
 	}

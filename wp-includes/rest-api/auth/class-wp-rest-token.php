@@ -94,18 +94,6 @@ class WP_REST_Token {
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => array( $this, 'generate_token' ),
 			'args'     => array(
-				'username'   => array(
-					'description'       => __( 'The username of the user; requires also setting the password argument.', 'jwt-auth' ),
-					'type'              => 'string',
-					'sanitize_callback' => 'sanitize_user',
-					'validate_callback' => 'rest_validate_request_arg',
-				),
-				'password'   => array(
-					'description'       => __( 'The password of the user; requires also setting the username argument.', 'jwt-auth' ),
-					'type'              => 'string',
-					'sanitize_callback' => 'sanitize_text_field',
-					'validate_callback' => 'rest_validate_request_arg',
-				),
 				'api_key'    => array(
 					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
 					'type'              => 'string',
@@ -418,26 +406,10 @@ class WP_REST_Token {
 			return $user;
 		}
 
-		/**
-		 * If alternate method for authentication is not provided then expect a username and password.
-		 */
 		if ( false === $user ) {
-			$username = $request->get_param( 'username' );
-			$password = $request->get_param( 'password' );
-
-			// Attempt to authenticate the WordPress user.
-			$user = wp_authenticate( $username, $password );
-		}
-
-		if ( is_wp_error( $user ) ) {
-			$error_code    = $user->get_error_code();
-			$error_message = $user->get_error_message( $error_code );
-
-			// Strip tags from the wp_authenticate output.
-			$error_message = wp_strip_all_tags( preg_replace( '#<a.*?>.*?</a>#i', '', $error_message ), true );
 			return new WP_Error(
-				'rest_authentication_' . $error_code,
-				$error_message,
+				'rest_authentication_required_api_key_secret',
+				__( 'An API key-pair is required to generate a token.', 'jwt-auth' ),
 				array(
 					'status' => 403,
 				)

@@ -744,7 +744,7 @@ class WP_REST_Key_Pair {
 								'<kbd>{{ data.refresh_token }}</kbd>'
 							);
 							?>
-							<p><?php esc_attr_e( 'Be sure to save these JSON Web Tokens in a safe location, you will not be able to retrieve them ever again. Once you click dismiss they\'re is gone forever.', 'jwt-auth' ); ?></p>
+							<p><?php esc_attr_e( 'Be sure to save these JSON Web Tokens in a safe location, you will not be able to retrieve them ever again. Once you click dismiss they\'re gone forever.', 'jwt-auth' ); ?></p>
 						</div>
 						<button class="button button-secondary key-pair-token-download"><?php esc_attr_e( 'Download', 'jwt-auth' ); ?></button>
 						<# } #>

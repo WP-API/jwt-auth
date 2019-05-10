@@ -18,7 +18,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * GitHub Plugin URI: https://github.com/WP-API/jwt-auth
  * Requires PHP:      5.6.20
- * Requires WP:       4.4.0
+ * Requires WP:       5.2
  */
 
 define( 'JWT_AUTH_PLUGIN_DIR', dirname( __FILE__ ) );
