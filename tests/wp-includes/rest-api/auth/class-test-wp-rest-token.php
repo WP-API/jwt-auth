@@ -388,7 +388,7 @@ class Test_WP_REST_Token extends WP_UnitTestCase {
 		$_SERVER['REQUEST_METHOD'] = 'GET';
 		add_filter( 'rest_authentication_require_token', '__return_true' );
 		$this->assertTrue( $this->token->require_token() );
-		add_filter( 'rest_authentication_require_token', '__return_true' );
+		remove_filter( 'rest_authentication_require_token', '__return_true' );
 
 		unset( $_SERVER['REQUEST_METHOD'] );
 		unset( $_SERVER['REQUEST_URI'] );
