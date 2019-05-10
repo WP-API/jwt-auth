@@ -131,12 +131,12 @@ class WP_REST_Token {
 			'title'      => __( 'JSON Web Token', 'jwt-auth' ),
 			'type'       => 'object',
 			'properties' => array(
-				'access_token' => array(
+				'access_token'  => array(
 					'description' => esc_html__( 'JSON Web Token.', 'jwt-auth' ),
 					'type'        => 'string',
 					'readonly'    => true,
 				),
-				'data'         => array(
+				'data'          => array(
 					'description' => esc_html__( 'JSON Web Token private claim data.', 'jwt-auth' ),
 					'type'        => 'object',
 					'readonly'    => true,
