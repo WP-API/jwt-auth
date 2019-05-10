@@ -374,9 +374,13 @@ class WP_REST_Token {
 			$require_token = false;
 		}
 
-		// GET requests do not require authentication, but if
-		// the Authorization header is provided, requests should
-		// be performed as the user corresponding to that token.
+		/**
+		 * GET requests do not typically require authentication, but if the
+		 * Authorization header is provided, we will use it. WHat's happening
+		 * here is that `WP_REST_Token::get_auth_header` returns the bearer
+		 * token or a `WP_Error`. So if we have an error then we can safely skip
+		 * the GET request.
+		 */
 		if ( 'GET' === $request_method && is_wp_error( $this->get_auth_header() ) ) {
 			$require_token = false;
 		}
