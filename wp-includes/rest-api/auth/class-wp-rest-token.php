@@ -91,6 +91,12 @@ class WP_REST_Token {
 	 */
 	public function register_routes() {
 		$args = array(
+			'methods'  => WP_REST_Server::READABLE,
+			'callback' => array( $this, 'validate' ),
+		);
+		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/validate', $args );
+
+		$args = array(
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => array( $this, 'generate_token' ),
 			'args'     => array(
@@ -168,6 +174,16 @@ class WP_REST_Token {
 							),
 						),
 					),
+				),
+				'exp'           => array(
+					'description' => esc_html__( 'The number of seconds until the token expires.', 'jwt-auth' ),
+					'type'        => 'integer',
+					'readonly'    => true,
+				),
+				'refresh_token' => array(
+					'description' => esc_html__( 'Refresh JSON Web Token.', 'jwt-auth' ),
+					'type'        => 'string',
+					'readonly'    => true,
 				),
 			),
 		);
@@ -592,6 +608,76 @@ class WP_REST_Token {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Determine if a valid Bearer token has been provided and return when it expires.
+	 *
+	 * @return array Return information about whether the token has expired or not.
+	 */
+	public function validate() {
+
+		$response = array(
+			'code'    => 'rest_authentication_invalid_bearer_token',
+			'message' => __( 'Invalid bearer token.', 'jwt-auth' ),
+			'data'    => array(
+				'status' => 403,
+			),
+		);
+
+		// Get HTTP Authorization Header.
+		$header = $this->get_auth_header();
+		if ( is_wp_error( $header ) ) {
+			return $response;
+		}
+
+		// Get the Bearer token from the header.
+		$token = $this->get_token( $header );
+		if ( is_wp_error( $token ) ) {
+			return $response;
+		}
+
+		// Decode the token.
+		$jwt = $this->decode_token( $token );
+		if ( is_wp_error( $jwt ) ) {
+			return $response;
+		}
+
+		// Determine if the token issuer is valid.
+		$issuer_valid = $this->validate_issuer( $jwt->iss );
+		if ( is_wp_error( $issuer_valid ) ) {
+			return $response;
+		}
+
+		// Determine if the token user is valid.
+		$user_valid = $this->validate_user( $jwt );
+		if ( is_wp_error( $user_valid ) ) {
+			return $response;
+		}
+
+		// Determine if the token has expired.
+		$expiration_valid = $this->validate_expiration( $jwt );
+		if ( is_wp_error( $expiration_valid ) ) {
+			$response['code']    = 'rest_authentication_expired_bearer_token';
+			$response['message'] = __( 'Expired bearer token.', 'jwt-auth' );
+			return $response;
+		}
+
+		$response = array(
+			'code'    => 'rest_authentication_valid_access_token',
+			'message' => __( 'Valid access token.', 'jwt-auth' ),
+			'data'    => array(
+				'status' => 200,
+				'exp'    => $jwt->exp - time(),
+			),
+		);
+
+		if ( isset( $jwt->data->user->token_type ) && 'refresh' === $jwt->data->user->token_type ) {
+			$response['code']    = 'rest_authentication_valid_refresh_token';
+			$response['message'] = __( 'Valid refresh token.', 'jwt-auth' );
+		}
+
+		return $response;
 	}
 
 	/**

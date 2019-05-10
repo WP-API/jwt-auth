@@ -115,7 +115,25 @@ curl -X POST https://example.org/wp-json/wp/v2/token \
 	-F refresh_token=YOUR_REFRESH_TOKEN
 ```
 
-== Generate Application Passwords ==
+You can also check if the token is still valid and when it expires:
+
+```bash
+curl -X GET https://sample.org/wp-json/wp/v2/token/validate \
+	-H 'Authorization: Bearer YOUR_ACCESS_TOKEN'
+```
+
+```javascript
+{
+    "code": "rest_authentication_valid_access_token",
+    "message": "Valid access token.",
+    "data": {
+        "status": 200,
+        "exp": 604800
+    }
+}
+```
+
+== Generate Key-pairs ==
 
 In order to generate a token you first need to create an application password, or what we also refer to as a key-pair.
 To create a key-pair you have to first log into the WordPress administrative panel and go to your profile page. There
