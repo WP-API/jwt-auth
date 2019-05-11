@@ -107,7 +107,11 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 	 * @covers ::get_rest_uri()
 	 */
 	public function test_get_rest_uri() {
+		$this->assertEquals( '/index.php?rest_route=/wp/v2/key-pair', WP_REST_Key_Pair::get_rest_uri() );
+
+		$this->set_permalink_structure( '/%postname%/' );
 		$this->assertEquals( '/wp-json/wp/v2/key-pair', WP_REST_Key_Pair::get_rest_uri() );
+		$this->set_permalink_structure( '' );
 	}
 
 	/**
@@ -237,8 +241,12 @@ class Test_WP_REST_Key_Pair extends WP_UnitTestCase {
 	 * @since 0.1
 	 */
 	public function test_require_token() {
-		$this->assertTrue( $this->key_pair->require_token( true, '/wp-json/wp/v2/posts', 'POST' ) );
-		$this->assertTrue( $this->key_pair->require_token( true, '/wp-json/wp/v2/posts', 'DELETE' ) );
+		$this->assertTrue( $this->key_pair->require_token( true, '/index.php?rest_route=/wp/v2/posts', 'POST' ) );
+		$this->assertTrue( $this->key_pair->require_token( true, '/index.php?rest_route=/wp/v2/posts', 'DELETE' ) );
+
+		$this->assertTrue( $this->key_pair->require_token( true, '/index.php?rest_route=/wp/v2/key-pair', 'GET' ) );
+		$this->assertFalse( $this->key_pair->require_token( true, '/index.php?rest_route=/wp/v2/key-pair', 'POST' ) );
+		$this->assertFalse( $this->key_pair->require_token( true, '/index.php?rest_route=/wp/v2/key-pair', 'DELETE' ) );
 
 		$this->assertTrue( $this->key_pair->require_token( true, '/wp-json/wp/v2/key-pair', 'GET' ) );
 		$this->assertFalse( $this->key_pair->require_token( true, '/wp-json/wp/v2/key-pair', 'POST' ) );
