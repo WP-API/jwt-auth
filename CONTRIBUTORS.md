@@ -1,6 +1,6 @@
 # Contributors
 
-This file is a work-in-progress attempt to display the various contributors to Eight Day Week, utilizing the [GitHub API as our source](https://api.github.com/repos/WP-API/jwt-auth/contributors?anon=1).  If you have examples of other or better ways to display this info, please let us know!
+This file is a work-in-progress attempt to display the various contributors to the JSON Web Token authentication feature plugin for the WordPress REST API, utilizing the [GitHub API as our source](https://api.github.com/repos/WP-API/jwt-auth/contributors?anon=1).  If you have examples of other or better ways to display this info, please let us know!
 
 ## Credits
 - Derek Herman ([@valendesigns](https://github.com/valendesigns))
