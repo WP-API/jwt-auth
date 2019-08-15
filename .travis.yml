@@ -1,0 +1,39 @@
+language: php
+
+sudo: false
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
+
+cache:
+  directories:
+    - node_modules
+    - vendor
+    - $HOME/phpunit-bin
+
+addons:
+  apt:
+    packages:
+    - libxml2-utils
+
+php:
+  - 7.2
+
+env:
+  - WP_VERSION=latest WP_MULTISITE=0
+  - WP_VERSION=latest WP_MULTISITE=1
+  - WP_VERSION=trunk WP_MULTISITE=0
+  - WP_VERSION=trunk WP_MULTISITE=1
+
+install:
+  - composer install
+  - export DEV_LIB_PATH=vendor/xwp/wp-dev-lib/scripts
+  - source "$DEV_LIB_PATH/travis.install.sh"
+
+script:
+  - source "$DEV_LIB_PATH/travis.script.sh"
+
+after_script:
+  - source "$DEV_LIB_PATH/travis.after_script.sh"

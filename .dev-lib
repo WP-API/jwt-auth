@@ -1,0 +1,3 @@
+DEFAULT_BASE_BRANCH=develop
+PHPCS_IGNORE='vendor/*,wp-includes/php-jwt/*,tests/wp-tests/*'
+CHECK_SCOPE=patches

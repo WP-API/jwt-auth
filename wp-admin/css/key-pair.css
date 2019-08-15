@@ -1,0 +1,41 @@
+.key-pair-dialog-background {
+    opacity: 1.0;
+    background: rgba(0,0,0,0.7);
+}
+
+.key-pair-dialog {
+    padding: 20px;
+}
+
+.new-key-pair-content {
+    padding-bottom: 20px;
+    padding-top: 10px;
+}
+
+.new-key-pair-content kbd {
+    display: block;
+    font-size: 120%;
+    margin-top: 2em;
+    padding: 1em;
+    text-align: center;
+}
+
+.key-pair-modal-dismiss {
+    float: right;
+}
+
+#do_new_keypair {
+    margin-top: 1px;
+}
+
+.input-select {
+    display: block;
+	font-family: monospace;
+    margin: .6em 0 1.2em;
+	width: 100%;
+}
+
+input[name=new_token_api_secret] {
+    width: 100%;
+    margin-bottom: 1.2em;
+}
