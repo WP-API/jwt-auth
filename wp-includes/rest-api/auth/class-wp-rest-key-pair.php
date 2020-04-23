@@ -80,7 +80,7 @@ class WP_REST_Key_Pair {
 			$prefix = rest_get_url_prefix();
 		}
 
-		return sprintf( '/%s/%s/%s', $prefix, self::_NAMESPACE_, self::_REST_BASE_ );
+		return sprintf( '%s/%s/%s/%s', get_home_url(), $prefix, self::_NAMESPACE_, self::_REST_BASE_ );
 	}
 
 	/**

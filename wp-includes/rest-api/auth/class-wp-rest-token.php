@@ -782,6 +782,14 @@ class WP_REST_Token {
 			$header = sanitize_text_field( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
 		}
 
+		//Maybe apache?
+		if( function_exists('apache_request_headers') ) {
+			$headers = apache_request_headers();
+			if (! $header && is_array($headers)  && isset($headers['Authorization'])) {
+				$header = sanitize_text_field( $headers['Authorization'] );
+			}
+		}
+
 		// The HTTP Authorization Header is missing, return an error.
 		if ( ! $header ) {
 			return new WP_Error(
