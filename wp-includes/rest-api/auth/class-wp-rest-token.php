@@ -394,6 +394,12 @@ class WP_REST_Token {
 			$require_token = false;
 		}
 
+		// Don't require a token or Authorization header for preflight OPTIONS
+		// requests.
+		if ( 'OPTIONS' === $request_method ) {
+			$require_token = false;
+		}
+
 		/**
 		 * GET requests do not typically require authentication, but if the
 		 * Authorization header is provided, we will use it. What's happening
