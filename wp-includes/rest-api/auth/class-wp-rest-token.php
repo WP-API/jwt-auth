@@ -241,7 +241,21 @@ class WP_REST_Token {
 		// Validate the bearer token.
 		$token = $this->validate_token();
 		if ( is_wp_error( $token ) ) {
-			return $token;
+			/**
+			 * Filter the response when a token is invalid.
+			 *
+			 * By default an authentication error will be returned. This filter
+			 * allows us to modify that response ignoring an invalid token,
+			 * allowing the REST API response to continue, making JWT auth
+			 * optional.
+			 *
+			 * @param object|WP_Error $token  Return the JSON Web Token object,
+			 *                                or WP_Error on failure.
+			 * @param mixed           $result Result of any other
+			 *                                authentication errors.
+			 * @return mixed
+			 */
+			return apply_filters( 'rest_authentication_invalid_token', $token, $result );
 		}
 
 		// If it's a wp_user based token, set the current user.
@@ -382,7 +396,7 @@ class WP_REST_Token {
 
 		/**
 		 * GET requests do not typically require authentication, but if the
-		 * Authorization header is provided, we will use it. WHat's happening
+		 * Authorization header is provided, we will use it. What's happening
 		 * here is that `WP_REST_Token::get_auth_header` returns the bearer
 		 * token or a `WP_Error`. So if we have an error then we can safely skip
 		 * the GET request.
