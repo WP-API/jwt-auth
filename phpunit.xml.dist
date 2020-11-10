@@ -7,7 +7,7 @@
 	convertWarningsToExceptions="true"
 	>
 	<testsuites>
-		<testsuite>
+		<testsuite name="jwt-auth">
 			<directory prefix="class-test-" suffix=".php">./tests/</directory>
 			<directory prefix="test-" suffix=".php">./tests/</directory>
 		</testsuite>
