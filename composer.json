@@ -10,7 +10,7 @@
   },
   "require-dev": {
     "brainmaestro/composer-git-hooks": "^2.6.0",
-    "dealerdirect/phpcodesniffer-composer-installer": "^0.5.0",
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
     "firebase/php-jwt": "^5.0",
     "phpcompatibility/phpcompatibility-wp": "*",
     "php-coveralls/php-coveralls": "^2.1",
