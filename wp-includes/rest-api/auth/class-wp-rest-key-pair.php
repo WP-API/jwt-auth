@@ -92,17 +92,18 @@ class WP_REST_Key_Pair {
 	 */
 	public function register_routes() {
 		$args = array(
-			'methods'  => WP_REST_Server::CREATABLE,
-			'callback' => array( $this, 'generate_key_pair' ),
-			'args'     => array(
-				'name'    => array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => array( $this, 'generate_key_pair' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'name'               => array(
 					'description'       => esc_html__( 'The name of the key-pair.', 'jwt-auth' ),
 					'type'              => 'string',
 					'required'          => true,
 					'sanitize_callback' => 'sanitize_text_field',
 					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'user_id' => array(
+				'user_id'            => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
@@ -110,15 +111,16 @@ class WP_REST_Key_Pair {
 					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
-			'schema'   => array( $this, 'get_item_schema' ),
+			'schema'              => array( $this, 'get_item_schema' ),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/(?P<user_id>[\d]+)', $args );
 
 		$args = array(
-			'methods'  => WP_REST_Server::DELETABLE,
-			'callback' => array( $this, 'delete_all_key_pairs' ),
-			'args'     => array(
-				'user_id' => array(
+			'methods'             => WP_REST_Server::DELETABLE,
+			'callback'            => array( $this, 'delete_all_key_pairs' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'user_id'            => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
@@ -130,17 +132,18 @@ class WP_REST_Key_Pair {
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/(?P<user_id>[\d]+)/revoke-all', $args );
 
 		$args = array(
-			'methods'  => WP_REST_Server::DELETABLE,
-			'callback' => array( $this, 'delete_key_pair' ),
-			'args'     => array(
-				'user_id' => array(
+			'methods'             => WP_REST_Server::DELETABLE,
+			'callback'            => array( $this, 'delete_key_pair' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
+				'user_id'            => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
 					'sanitize_callback' => 'absint',
 					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'api_key' => array(
+				'api_key'            => array(
 					'description'       => esc_html__( 'The API key being revoked.', 'jwt-auth' ),
 					'type'              => 'string',
 					'required'          => true,
