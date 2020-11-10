@@ -73,12 +73,12 @@ class WP_Key_Pair_List_Table extends WP_List_Table {
 				if ( empty( $item['created'] ) ) {
 					return '&mdash;';
 				}
-				return date( 'F j, Y g:i a', $item['created'] );
+				return gmdate( 'F j, Y g:i a', $item['created'] );
 			case 'last_used':
 				if ( empty( $item['last_used'] ) ) {
 					return '&mdash;';
 				}
-				return date( 'F j, Y g:i a', $item['last_used'] );
+				return gmdate( 'F j, Y g:i a', $item['last_used'] );
 			case 'last_ip':
 				if ( empty( $item['last_ip'] ) ) {
 					return '&mdash;';

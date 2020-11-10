@@ -98,15 +98,17 @@ class WP_REST_Token {
 	 */
 	public function register_routes() {
 		$args = array(
-			'methods'  => WP_REST_Server::READABLE,
-			'callback' => array( $this, 'validate' ),
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'validate' ),
+			'permission_callback' => '__return_true',
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/validate', $args );
 
 		$args = array(
-			'methods'  => WP_REST_Server::CREATABLE,
-			'callback' => array( $this, 'generate_token' ),
-			'args'     => array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => array( $this, 'generate_token' ),
+			'permission_callback' => '__return_true',
+			'args'                => array(
 				'api_key'    => array(
 					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
 					'type'              => 'string',
@@ -120,7 +122,7 @@ class WP_REST_Token {
 					'validate_callback' => 'rest_validate_request_arg',
 				),
 			),
-			'schema'   => array( $this, 'get_item_schema' ),
+			'schema'              => array( $this, 'get_item_schema' ),
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_, $args );
 	}
@@ -380,8 +382,8 @@ class WP_REST_Token {
 	 */
 	public function require_token() {
 		$require_token  = true;
-		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( $_SERVER['REQUEST_URI'] ) : false;
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( $_SERVER['REQUEST_METHOD'] ) : false;
+		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : false;
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : false;
 
 		// User is already authenticated.
 		$user = wp_get_current_user();
@@ -775,11 +777,11 @@ class WP_REST_Token {
 	public function get_auth_header() {
 
 		// Get HTTP Authorization Header.
-		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? sanitize_text_field( $_SERVER['HTTP_AUTHORIZATION'] ) : false;
+		$header = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ) ) : false;
 
 		// Check for alternative header.
 		if ( ! $header && isset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) {
-			$header = sanitize_text_field( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
+			$header = sanitize_text_field( wp_unslash( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) );
 		}
 
 		// The HTTP Authorization Header is missing, return an error.
