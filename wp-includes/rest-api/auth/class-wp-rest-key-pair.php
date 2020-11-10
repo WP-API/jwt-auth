@@ -96,14 +96,14 @@ class WP_REST_Key_Pair {
 			'callback'            => array( $this, 'generate_key_pair' ),
 			'permission_callback' => '__return_true',
 			'args'                => array(
-				'name'               => array(
+				'name'    => array(
 					'description'       => esc_html__( 'The name of the key-pair.', 'jwt-auth' ),
 					'type'              => 'string',
 					'required'          => true,
 					'sanitize_callback' => 'sanitize_text_field',
 					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'user_id'            => array(
+				'user_id' => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
@@ -120,7 +120,7 @@ class WP_REST_Key_Pair {
 			'callback'            => array( $this, 'delete_all_key_pairs' ),
 			'permission_callback' => '__return_true',
 			'args'                => array(
-				'user_id'            => array(
+				'user_id' => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
@@ -136,14 +136,14 @@ class WP_REST_Key_Pair {
 			'callback'            => array( $this, 'delete_key_pair' ),
 			'permission_callback' => '__return_true',
 			'args'                => array(
-				'user_id'            => array(
+				'user_id' => array(
 					'description'       => esc_html__( 'The ID of the user.', 'jwt-auth' ),
 					'type'              => 'integer',
 					'required'          => true,
 					'sanitize_callback' => 'absint',
 					'validate_callback' => 'rest_validate_request_arg',
 				),
-				'api_key'            => array(
+				'api_key' => array(
 					'description'       => esc_html__( 'The API key being revoked.', 'jwt-auth' ),
 					'type'              => 'string',
 					'required'          => true,
@@ -517,7 +517,7 @@ class WP_REST_Key_Pair {
 		$keypairs[] = $new_item;
 		$this->set_user_key_pairs( $user_id, $keypairs );
 
-		$new_item['created']   = date( 'F j, Y g:i a', $new_item['created'] );
+		$new_item['created']   = gmdate( 'F j, Y g:i a', $new_item['created'] );
 		$new_item['last_used'] = '—';
 		$new_item['last_ip']   = '—';
 
