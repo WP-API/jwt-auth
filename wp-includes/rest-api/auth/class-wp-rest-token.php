@@ -100,12 +100,14 @@ class WP_REST_Token {
 		$args = array(
 			'methods'  => WP_REST_Server::READABLE,
 			'callback' => array( $this, 'validate' ),
+			'permission_callback' => '__return_true',
 		);
 		register_rest_route( self::_NAMESPACE_, '/' . self::_REST_BASE_ . '/validate', $args );
 
 		$args = array(
 			'methods'  => WP_REST_Server::CREATABLE,
 			'callback' => array( $this, 'generate_token' ),
+			'permission_callback' => '__return_true',
 			'args'     => array(
 				'api_key'    => array(
 					'description'       => __( 'The API key of the user; requires also setting the api_secret.', 'jwt-auth' ),
